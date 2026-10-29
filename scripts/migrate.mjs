@@ -13,6 +13,38 @@ for (const stmt of schema.split(/;\s*\n/).map((s) => s.trim()).filter(Boolean)) 
 }
 console.log('Schema OK');
 
+// --- Elenchi (Type MC/SC, Owner): popolati dai dati esistenti solo se vuoti ---
+function parseOwners(str) {
+  const out = [];
+  for (const part of String(str ?? '').split(/\s*[\/;]\s*/)) {
+    const m = part.match(/^([^:,]+?)\s*:\s*(.*)$/);
+    if (m) for (const n of m[2].split(',').map((x) => x.trim()).filter(Boolean)) out.push(`${m[1].trim()}: ${n}`);
+    else for (const n of part.split(',').map((x) => x.trim()).filter(Boolean)) out.push(n);
+  }
+  return [...new Set(out)];
+}
+async function seed(kind, values) {
+  const [{ n }] = await sql.query('select count(*)::int as n from lookups where kind = $1', [kind]);
+  if (n > 0) return;
+  let pos = 0;
+  for (const v of [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))) {
+    await sql.query('insert into lookups (kind, value, position) values ($1,$2,$3) on conflict do nothing', [kind, v, ++pos]);
+  }
+  console.log(`Elenco ${kind}: ${pos} voci`);
+}
+const rowsT = await sql.query(`select area, type, owner from items`);
+await seed('type_mc', rowsT.filter((r) => r.area === 'MC').map((r) => (r.type || '').trim()));
+await seed('type_sc', rowsT.filter((r) => r.area === 'SC').map((r) => (r.type || '').trim()));
+await seed('owner', rowsT.filter((r) => r.area !== 'AMS').flatMap((r) => parseOwners(r.owner)));
+
+// --- Stima: solo numero (giorni) oppure "-" ---
+const norm = (s) => { const m = String(s ?? '').trim().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(?:md|gg|d)?$/i); return m ? String(Number(m[1])) : '-'; };
+for (const { estimate } of await sql.query('select distinct estimate from items')) {
+  const n = norm(estimate);
+  if (n !== estimate) await sql.query('update items set estimate = $1 where estimate = $2', [n, estimate]);
+}
+console.log('Stime normalizzate');
+
 const users = [
   { username: 'mc', role: 'MC', name: 'Utente MC', pwd: process.env.MC_PASSWORD },
   { username: 'sc', role: 'SC', name: 'Utente SC', pwd: process.env.SC_PASSWORD },

@@ -89,3 +89,11 @@ create table if not exists settings (
   key text primary key,
   value text
 )
+;
+create table if not exists lookups (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('type_mc','type_sc','owner')),
+  value text not null,
+  position int not null default 0,
+  unique (kind, value)
+);

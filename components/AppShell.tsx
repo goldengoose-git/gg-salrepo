@@ -17,6 +17,7 @@ const NAV = [
   { href: '/timeline', label: 'Timeline', ic: 'tl' },
   { href: '/archivio', label: 'Archivio', ic: 'ar' },
   { href: '/anteprima', label: 'Anteprima ed export', ic: 'pv' },
+  { href: '/elenchi', label: 'Elenchi (Type, Owner)', ic: 'list' },
   { href: '/impostazioni', label: 'Sfondi e loghi', ic: 'img' },
 ];
 

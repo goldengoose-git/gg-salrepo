@@ -15,5 +15,6 @@ export type Bar = {
   id: string; deck_id: string; lane: Lane; label: string; status: BarStatus; start_m: number; end_m: number; row: number;
 };
 export type SnapshotRow = { id: string; week_label: string; created_by: string | null; created_at: string };
-export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[] };
+export type Lookup = { id: string; kind: 'type_mc' | 'type_sc' | 'owner'; value: string; position: number };
+export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[] };
 export type Me = { username: string; role: 'MC' | 'SC'; name: string };

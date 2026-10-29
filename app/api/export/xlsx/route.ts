@@ -1,3 +1,4 @@
+import { fmtEstimate } from '@/lib/lookups';
 import ExcelJS from 'exceljs';
 import { STATUS } from '@/lib/constants';
 import { isErr, needUser } from '@/lib/http';
@@ -23,7 +24,7 @@ export async function GET() {
     { header: 'Chiuso il', key: 'x', width: 14 },
   ];
   for (const i of st.items.filter((x) => x.archived_at))
-    done.addRow({ a: i.area, c: i.code, t: i.type, d: i.description, p: i.priority, g: i.golive_date, o: i.owner, e: i.estimate, k: i.contract, x: (i.closed_at ?? i.archived_at ?? '').toString().slice(0, 10) });
+    done.addRow({ a: i.area, c: i.code, t: i.type, d: i.description, p: i.priority, g: i.golive_date, o: i.owner, e: fmtEstimate(i.estimate), k: i.contract, x: (i.closed_at ?? i.archived_at ?? '').toString().slice(0, 10) });
   head(done);
   const ams = wb.addWorksheet('Ticket AMS');
   ams.columns = [

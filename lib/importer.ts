@@ -1,4 +1,5 @@
 import { q } from './db';
+import { normEstimate } from './lookups';
 import { DONE_RE, LANES, STATUS_KEYS, areasFor, lanesFor, type Area, type BarStatus, type Lane, type Role, type Status } from './constants';
 
 export type ImpItem = Partial<{
@@ -118,7 +119,7 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
     const rows = items.map((i) => ({
       area: i.area, position: ++base[i.area], code: i.code ?? '', type: i.type ?? '', description: i.description ?? '',
       priority: i.priority ?? '', requested_date: i.requested_date ?? '', golive_date: i.golive_date ?? '', owner: i.owner ?? '',
-      estimate: i.estimate ?? '', contract: i.contract ?? '', activity: i.activity ?? '', status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
+      estimate: normEstimate(i.estimate), contract: i.contract ?? '', activity: i.activity ?? '', status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
       archived: !!i.archived || i.status === 'completed',
     }));
     if (rows.length) {

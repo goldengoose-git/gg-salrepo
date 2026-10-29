@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { areasFor, type Area } from '@/lib/constants';
 import { api } from '@/lib/client';
 import type { Item } from '@/lib/types';
@@ -8,6 +8,13 @@ import { Ic } from './icons';
 import ItemModal from './ItemModal';
 import { StatusPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
+import { contractKind, fmtEstimate } from '@/lib/lookups';
+
+export function ContractPill({ v }: { v: string }) {
+  const k = contractKind(v);
+  if (!k) return <>{v}</>;
+  return <span className={'pill cx-' + k}>{k.toUpperCase()}</span>;
+}
 
 export default function ItemTable({ area, prefix, label }: { area: Area; prefix: string; label: string }) {
   const { me, state, reload, toast } = useApp();
@@ -18,6 +25,20 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
   const all = state!.items.filter((i) => i.area === area && !i.archived_at).sort((a, b) => a.position - b.position);
   const rows = all.filter((i) => (!fs || i.status === fs) && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
   const ams = area === 'AMS';
+  const showType = area !== 'AMS';
+  const [drag, setDrag] = useState<string | null>(null);
+  const [over, setOver] = useState<{ id: string; after: boolean } | null>(null);
+  const canDrag = canEdit && !q && !fs;
+  const grip = useRef(false); // il trascinamento parte solo dalla maniglia
+
+  async function drop() {
+    if (!drag || !over || drag === over.id) { setDrag(null); setOver(null); return; }
+    const ids = all.map((i) => i.id).filter((x) => x !== drag);
+    const at = ids.indexOf(over.id) + (over.after ? 1 : 0);
+    ids.splice(at, 0, drag);
+    setDrag(null); setOver(null);
+    try { await api('/api/items/reorder', 'POST', { area, ids }); await reload(); } catch (e: any) { toast(e.message); }
+  }
 
   async function act(id: string, body: any, msg?: string) {
     try { await api(`/api/items/${id}`, 'PATCH', body); await reload(); if (msg) toast(msg); } catch (e: any) { toast(e.message); }
@@ -36,18 +57,26 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
       <div className="card" style={{ overflow: 'auto' }}>
         <table className="t">
           <thead><tr>
-            <th style={{ width: 80 }}>{ams ? 'Ticket' : 'ID'}</th>{area === 'MC' && <th>Type</th>}<th>{ams ? 'Subject' : 'Description'}</th><th>Priorità</th>
+            {canDrag && <th style={{ width: 28, padding: 0 }} />}<th style={{ width: 80 }}>{ams ? 'Ticket' : 'ID'}</th>{showType && <th>Type</th>}<th>{ams ? 'Subject' : 'Description'}</th><th>Priorità</th>
             <th>{ams ? 'Opened' : 'Requested'}</th>{!ams && <th>GoLive</th>}<th>Owner</th>{!ams && <th>Stima</th>}{!ams && <th>Contract</th>}<th>Status</th><th style={{ width: 118 }} />
           </tr></thead>
           <tbody>
             {rows.map((i) => {
               const n = all.indexOf(i) + 1;
               return (
-                <tr key={i.id} className="r" onClick={() => canEdit && setEdit(i)}>
+                <tr key={i.id} className={'r' + (drag === i.id ? ' dragging' : '') + (over?.id === i.id && drag !== i.id ? (over.after ? ' drop-after' : ' drop-before') : '')}
+                  draggable={canDrag}
+                  onDragStart={(e) => { if (!grip.current) { e.preventDefault(); return; } e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', i.id); setDrag(i.id); }}
+                  onDragOver={(e) => { if (!drag) return; e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setOver({ id: i.id, after: e.clientY > r.top + r.height / 2 }); }}
+                  onDrop={(e) => { e.preventDefault(); grip.current = false; drop(); }}
+                  onDragEnd={() => { grip.current = false; setDrag(null); setOver(null); }}
+                  onClick={() => canEdit && setEdit(i)}>
+                  {canDrag && <td className="grip" title="Trascina per riordinare" onClick={(e) => e.stopPropagation()}
+                    onMouseDown={() => { grip.current = true; }} onMouseUp={() => { grip.current = false; }}>⋮⋮</td>}
                   <td><b>{ams ? i.code : `${prefix}-${String(n).padStart(2, '0')}`}</b></td>
-                  {area === 'MC' && <td>{i.type}</td>}
+                  {showType && <td>{i.type}</td>}
                   <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}
-                  <td>{i.owner}</td>{!ams && <td>{i.estimate}</td>}{!ams && <td>{i.contract}</td>}<td><StatusPill s={i.status} />{ams && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
+                  <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td><StatusPill s={i.status} />{ams && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
                   <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                     {canEdit && <>
                       <button className="ib" title="Su" disabled={n === 1} onClick={() => act(i.id, { move: 'up' })}><Ic n="up" /></button>{' '}
@@ -58,11 +87,11 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                 </tr>
               );
             })}
-            {!rows.length && <tr><td colSpan={11} className="muted" style={{ padding: 24, textAlign: 'center' }}>Nessuna voce.</td></tr>}
+            {!rows.length && <tr><td colSpan={13} className="muted" style={{ padding: 24, textAlign: 'center' }}>Nessuna voce.</td></tr>}
           </tbody>
         </table>
       </div>
-      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Max 12 righe per slide: oltre, la tabella continua automaticamente sulla pagina successiva. Gli ID si rinumerano da soli.</div>
+      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Max 12 righe per slide: oltre, la tabella continua automaticamente sulla pagina successiva. Gli ID si rinumerano da soli. Trascina le righe dalla maniglia ⋮⋮ (con ricerca o filtro attivi il riordino è disattivato) oppure usa le frecce.</div>
       {edit && <ItemModal area={area} item={edit === 'new' ? undefined : edit} label={label} onClose={() => setEdit(null)} />}
     </>
   );

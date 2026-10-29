@@ -1,3 +1,4 @@
+import { fmtEstimate } from './lookups';
 import { COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
 import type { AppState, Item } from './types';
 
@@ -89,8 +90,8 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   const cellsOf = (theme: 'mc' | 'sc', it: Item, n: string) => {
     const act = it.activity || sLabel(it.status);
     return theme === 'mc'
-      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.owner, it.estimate, it.contract, act]
-      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.owner, it.estimate, it.contract, act];
+      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
+      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
   };
   const tableSlides = (theme: 'mc' | 'sc', title: string, items: Item[]) => {
     const cols = COLS[theme];
@@ -150,7 +151,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   if (includeArchive) {
     const arch = st.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
     if (arch.length) {
-      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, it.estimate, it.contract, 'Done'];
+      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
       const pages = paginate(arch, (it) => estRowH(COLS.completed, cc(it)));
       pages.forEach((page, p, all) => {
         slides.push({
