@@ -2,6 +2,7 @@ import { applyImport, parseAny } from '@/lib/importer';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
 import { q } from '@/lib/db';
+import { parseSalLabel, weekLabel } from '@/lib/dates';
 
 // POST { json, scope: 'all'|'mine'|'timeline', mode: 'merge'|'replace', dryRun?: boolean, applyMeta?: boolean }
 export async function POST(req: Request) {
@@ -33,6 +34,9 @@ export async function POST(req: Request) {
     const d = parsed.deck;
     await q(`update decks set client=coalesce($1,client), subtitle=coalesce($2,subtitle), date_label=coalesce($3,date_label), year=coalesce($4,year) where id=$5`,
       [d.client ?? null, d.subtitle ?? null, d.date_label ?? null, d.year ?? null, deck.id]);
+    // se la data del file è riconoscibile, aggiorna anche data SAL e Week (restano coerenti)
+    const iso = d.date_label ? parseSalLabel(d.date_label) : null;
+    if (iso) await q('update decks set sal_date=$1, week_label=$2, year=$3 where id=$4', [iso, weekLabel(iso), +iso.slice(0, 4), deck.id]);
   }
   await audit(me, 'import', 'deck', deck.id, { scope, mode, ...res });
   return json({ ok: true, summary, imported: res });
