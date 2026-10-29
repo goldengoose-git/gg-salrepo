@@ -11,29 +11,6 @@ export default function Ticket() {
   const [paste, setPaste] = useState(false);
   const [txt, setTxt] = useState('');
   const [err, setErr] = useState('');
-  const [csv, setCsv] = useState('');
-  const [csvName, setCsvName] = useState('');
-  const [csvSummary, setCsvSummary] = useState<number | null>(null);
-  const [csvOpen, setCsvOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  async function selectCsv(file?: File) {
-    setCsvSummary(null); setErr('');
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { setErr('File troppo grande (max 4 MB)'); return; }
-    try {
-      const data = await file.text();
-      const r = await api<{ summary: { ams: number } }>('/api/import', 'POST', { json: data, format: 'jira-csv', dryRun: true });
-      setCsv(data); setCsvName(file.name); setCsvSummary(r.summary.ams);
-    } catch (e: any) { setErr(e.message); }
-  }
-  async function importCsv() {
-    if (!csvSummary || busy) return;
-    setBusy(true); setErr('');
-    try {
-      const r = await api<{ imported: { items: number } }>('/api/import', 'POST', { json: csv, format: 'jira-csv' });
-      await reload(); toast(`${r.imported.items} ticket AMS importati`); setCsvOpen(false); setCsv(''); setCsvSummary(null);
-    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
-  }
   // una riga per ticket: "AC-1234 - Subject (stato)" oppure "AC-1234<TAB>Subject<TAB>Owner"
   function parse() {
     return txt.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
@@ -59,18 +36,9 @@ export default function Ticket() {
   return (
     <>
       <div className="top"><h2>Ticket AMS</h2><span className="sp" />
-        {me.role === 'SC' && <><button className="btn" onClick={() => { setCsvOpen(true); setErr(''); }}><Ic n="up" />Importa CSV Jira</button><button className="btn" onClick={() => setPaste(true)}><Ic n="cp" />Incolla elenco</button></>}</div>
+        {me.role === 'SC' && <button className="btn" onClick={() => setPaste(true)}><Ic n="cp" />Incolla elenco</button>}</div>
       <div className="body"><ItemTable area="AMS" prefix="AC" label="ticket" />
         <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>Un ticket con testo &quot;(done)&quot; a fine subject, o con Activity status Completed, passa in Archivio (Completed Activities).</div></div>
-      {csvOpen && (
-        <Modal title="Importa ticket da CSV Jira" onClose={() => setCsvOpen(false)} width={680}
-          footer={<><span className="sp" />{err && <span className="err">{err}</span>}<button className="btn" onClick={() => setCsvOpen(false)}>Annulla</button>
-            <button className="btn pri" disabled={!csvSummary || busy} onClick={importCsv}>{busy ? 'Importo…' : `Importa ${csvSummary ?? ''} ticket`}</button></>}>
-          <p className="muted">Esporta da Jira un CSV con <b>Issue key</b> e <b>Summary</b>. Facoltativi: Assignee, Priority, Status, Created. I ticket già presenti (stessa Issue key) vengono saltati; non si modificano gli esistenti.</p>
-          <input type="file" accept=".csv,text/csv" onChange={(e) => selectCsv(e.target.files?.[0])} />
-          {csvSummary !== null && <p><b>{csvSummary} ticket</b> letti da {csvName}. Quelli con stato Done/Closed/Resolved verranno archiviati.</p>}
-        </Modal>
-      )}
       {paste && (
         <Modal title="Incolla elenco ticket" onClose={() => setPaste(false)} width={680}
           footer={<><span className="sp" />{err && <span className="err">{err}</span>}<button className="btn" onClick={() => setPaste(false)}>Annulla</button>

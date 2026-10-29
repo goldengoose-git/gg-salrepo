@@ -6,6 +6,12 @@ const PUBLIC_GET = ['/api/branding'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // protezione CSRF: le richieste che modificano dati devono arrivare dallo stesso sito
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    const origin = req.headers.get('origin');
+    if (origin && new URL(origin).host !== req.headers.get('host'))
+      return NextResponse.json({ error: 'Origine non consentita' }, { status: 403 });
+  }
   if (PUBLIC.some((p) => pathname === p)) return NextResponse.next();
   if (req.method === 'GET' && PUBLIC_GET.includes(pathname)) return NextResponse.next();
   const t = req.cookies.get('sal_session')?.value;

@@ -111,3 +111,15 @@ create table if not exists team_status (
   done_by text,
   primary key (deck_id, team)
 );
+;
+create table if not exists login_attempts (
+  id bigserial primary key,
+  ip text not null,
+  username text not null,
+  ok boolean not null default false,
+  at timestamptz not null default now()
+)
+;
+create index if not exists login_attempts_ip_at on login_attempts (ip, at desc)
+;
+create index if not exists login_attempts_user_at on login_attempts (username, at desc)

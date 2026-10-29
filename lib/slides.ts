@@ -77,7 +77,7 @@ export function layoutBars(
   }
   return { bars: res, rows: Math.max(1, ends.length) };
 }
-export const PIPE = { top: 145, bottom: 676, laneGap: 8, minPitch: 12, maxPitch: 20 };
+export const PIPE = { top: 114, bottom: 676, laneGap: 12, minPitch: 14, maxPitch: 24 };
 export const pipePitch = (rows: number, lanes: number) =>
   Math.max(11, Math.min(PIPE.maxPitch, (PIPE.bottom - PIPE.top - lanes * PIPE.laneGap) / Math.max(1, rows)));
 

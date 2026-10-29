@@ -11,62 +11,14 @@ const hex = (c: string) => c.replace('#', '');
 const FONT_T = 'Montserrat';
 const FONT_B = 'Outfit';
 
-// AddImage expects a complete data URI, not a bare "image/png;base64,..." string.
-// Preserve the natural aspect ratio of logos (PPTX's `sizing` option is not
-// supported by PptxGenJS 3.x and previously stretched them to the box).
-type ImageData = { data: string; ratio: number };
-function imageRatio(buf: Buffer, type: string): number {
-  if (type === 'image/svg+xml') {
-    const xml = buf.toString('utf8');
-    const svg = xml.match(/<svg\b[^>]*>/i)?.[0] || '';
-    const vb = svg.match(/\bviewBox\s*=\s*["']\s*([\d.eE+-]+)[,\s]+([\d.eE+-]+)[,\s]+([\d.eE+-]+)[,\s]+([\d.eE+-]+)["']/i);
-    if (vb && +vb[3] > 0 && +vb[4] > 0) return +vb[3] / +vb[4];
-    const w = svg.match(/\bwidth\s*=\s*["']\s*([\d.]+)/i);
-    const h = svg.match(/\bheight\s*=\s*["']\s*([\d.]+)/i);
-    if (w && h && +h[1] > 0) return +w[1] / +h[1];
-  }
-  if (type === 'image/png' && buf.length >= 24 && buf.subarray(1, 4).toString() === 'PNG')
-    return buf.readUInt32BE(16) / buf.readUInt32BE(20);
-  if (type === 'image/jpeg' && buf.length > 4) {
-    let i = 2;
-    while (i + 4 < buf.length) {
-      if (buf[i] !== 0xff) break;
-      const marker = buf[i + 1];
-      if (marker === 0xff) { i++; continue; }
-      if (marker === 0xd8 || marker === 0xd9) { i += 2; continue; }
-      const size = buf.readUInt16BE(i + 2);
-      if (size < 2 || i + 2 + size > buf.length) break;
-      if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker) && size >= 7)
-        return buf.readUInt16BE(i + 7) / buf.readUInt16BE(i + 5);
-      i += 2 + size;
-    }
-  }
-  if (type === 'image/webp' && buf.length >= 30 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') {
-    const chunk = buf.toString('ascii', 12, 16);
-    if (chunk === 'VP8X') return (1 + buf.readUIntLE(24, 3)) / (1 + buf.readUIntLE(27, 3));
-    if (chunk === 'VP8 ' && buf.length >= 30) return (buf.readUInt16LE(26) & 0x3fff) / (buf.readUInt16LE(28) & 0x3fff);
-    if (chunk === 'VP8L' && buf.length >= 25) {
-      const bits = buf.readUInt32LE(21);
-      return (1 + (bits & 0x3fff)) / (1 + ((bits >>> 14) & 0x3fff));
-    }
-  }
-  return 1; // safe fallback for unrecognised metadata
-}
-function contain(image: ImageData, x: number, y: number, w: number, h: number) {
-  const ratio = image.ratio;
-  const iw = ratio > 0 && Number.isFinite(ratio) ? Math.min(w, h * ratio) : Math.min(w, h);
-  const ih = ratio > 0 && Number.isFinite(ratio) ? iw / ratio : Math.min(w, h);
-  return { data: image.data, x: x + (w - iw) / 2, y: y + (h - ih) / 2, w: iw, h: ih };
-}
-async function img(url: string | null): Promise<ImageData | null> {
+async function img(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
     const r = await fetch(url);
     if (!r.ok) return null;
-    const type = (r.headers.get('content-type') || 'image/png').split(';')[0].trim().toLowerCase();
-    if (!['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(type)) return null;
+    const type = (r.headers.get('content-type') || 'image/png').split(';')[0];
     const buf = Buffer.from(await r.arrayBuffer());
-    return { data: `data:${type};base64,${buf.toString('base64')}`, ratio: imageRatio(buf, type) };
+    return `${type};base64,${buf.toString('base64')}`;
   } catch {
     return null;
   }
@@ -84,10 +36,10 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
   ]);
   const slides = buildSlides(st, includeArchive);
 
-  const dark = (s: PptxGenJS.Slide, bg: ImageData | null) => {
+  const dark = (s: PptxGenJS.Slide, bg: string | null) => {
     s.background = { color: '15171B' };
     if (bg) {
-      s.addImage({ data: bg.data, x: 0, y: 0, w: 13.333, h: 7.5 });
+      s.addImage({ data: bg, x: 0, y: 0, w: 13.333, h: 7.5 });
       if (d.overlay > 0) s.addShape('rect', { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: '000000', transparency: 100 - d.overlay }, line: { type: 'none' } });
     }
     s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: 'E0301E' }, line: { type: 'none' } });
@@ -104,21 +56,21 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
     pageNo++;
     if (sl.kind === 'cover') {
       dark(s, bgCover);
-      if (logoL) s.addImage(contain(logoL, 0.6, 0.5, 2.2, 0.9));
-      if (logoR) s.addImage(contain(logoR, 10.5, 0.5, 2.2, 0.9));
+      if (logoL) s.addImage({ data: logoL, x: 0.6, y: 0.5, w: 2.2, h: 0.9, sizing: { type: 'contain', w: 2.2, h: 0.9 } });
+      if (logoR) s.addImage({ data: logoR, x: 10.5, y: 0.5, w: 2.2, h: 0.9, sizing: { type: 'contain', w: 2.2, h: 0.9 } });
       s.addText(d.client.toUpperCase(), { x: 0.8, y: 3.0, w: 11, h: 0.5, fontFace: FONT_T, fontSize: 16, bold: true, color: 'F6B3AA', charSpacing: 4 });
       s.addText('Weekly SAL', { x: 0.8, y: 3.45, w: 11, h: 1.0, fontFace: FONT_T, fontSize: 44, bold: true, color: 'FFFFFF' });
       s.addText(`${d.subtitle} · ${d.date_label}`, { x: 0.8, y: 4.5, w: 11, h: 0.5, fontFace: FONT_B, fontSize: 18, color: 'D6D8DE' });
     } else if (sl.kind === 'section' || sl.kind === 'closing') {
       dark(s, bgDiv);
       s.addText(sl.kind === 'section' ? sl.title : 'Thank you', { x: 0.8, y: 3.0, w: 11.5, h: 1.2, fontFace: FONT_T, fontSize: 40, bold: true, color: 'FFFFFF' });
-      if (logoL && sl.kind === 'closing') s.addImage(contain(logoL, 0.8, 5.6, 2.0, 0.8));
+      if (logoL && sl.kind === 'closing') s.addImage({ data: logoL, x: 0.8, y: 5.6, w: 2.0, h: 0.8, sizing: { type: 'contain', w: 2.0, h: 0.8 } });
     } else if (sl.kind === 'table') {
       s.background = { color: 'FFFFFF' };
-      if (bgTab) s.addImage({ data: bgTab.data, x: 0, y: 0, w: 13.333, h: 7.5 });
+      if (bgTab) s.addImage({ data: bgTab, x: 0, y: 0, w: 13.333, h: 7.5 });
       s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: sl.theme === 'completed' ? '7135A8' : 'E0301E' }, line: { type: 'none' } });
       s.addText(clean(sl.title) + (sl.part ? `  (${sl.part})` : ''), { x: 0.5, y: 0.2, w: 9, h: 0.5, fontFace: FONT_T, fontSize: 20, bold: true, color: '2C2D2C' });
-      if (logoR) s.addImage(contain(logoR, 11.4, 0.2, 1.5, 0.6));
+      if (logoR) s.addImage({ data: logoR, x: 11.4, y: 0.2, w: 1.5, h: 0.6, sizing: { type: 'contain', w: 1.5, h: 0.6 } });
       if (sl.legend) {
         let lx = 0.5;
         for (const k of ['ontrack', 'delay', 'blocked', 'onhold'] as const) {

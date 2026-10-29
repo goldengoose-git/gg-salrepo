@@ -95,7 +95,7 @@ export function parseAny(j: any): Parsed {
   return out;
 }
 
-export type ImportOpts = { deckId: string; role: Role; scope: 'all' | 'mine' | 'timeline'; mode: 'merge' | 'replace'; user: string; jiraCsv?: boolean };
+export type ImportOpts = { deckId: string; role: Role; scope: 'all' | 'mine' | 'timeline'; mode: 'merge' | 'replace'; user: string };
 
 export async function applyImport(p: Parsed, o: ImportOpts) {
   const areas = areasFor(o.role);
@@ -106,9 +106,9 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
     let items = p.items.filter((i) => areas.includes(i.area));
     if (o.mode === 'merge') {
       const ex = await q<any>('select area, code, description from items where deck_id = $1', [o.deckId]);
-      const key = (a: string, c: string, d: string) => o.jiraCsv && a === 'AMS' ? `${a}|${(c ?? '').toUpperCase()}` : `${a}|${c ?? ''}|${d ?? ''}`;
+      const key = (a: string, c: string, d: string) => `${a}|${c ?? ''}|${d ?? ''}`;
       const have = new Set(ex.map((e: any) => key(e.area, e.code, e.description)));
-      items = items.filter((i) => { const k = key(i.area, i.code ?? '', i.description ?? ''); if (have.has(k)) return false; have.add(k); return true; });
+      items = items.filter((i) => !have.has(key(i.area, i.code ?? '', i.description ?? '')));
     }
     if (o.mode === 'replace') await q('delete from items where deck_id = $1 and area = any($2)', [o.deckId, areas]);
     const base: Record<string, number> = {};
