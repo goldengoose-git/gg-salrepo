@@ -22,6 +22,14 @@ function Box({ kind, title, hint }: { kind: LookupKind; title: string; hint: str
     if (!confirm(`Togliere "${value}" dall'elenco? Le voci che lo usano restano invariate.`)) return;
     try { await api(`/api/lookups/${id}`, 'DELETE'); await reload(); } catch (x: any) { toast(x.message); }
   }
+  async function rename(id: string, value: string) {
+    const nv = window.prompt(`Nuovo nome per "${value}".\nSe esiste già un valore con quel nome, i due vengono uniti e le voci aggiornate.`, value);
+    if (nv === null || !nv.trim() || nv.trim() === value) return;
+    try {
+      const r = await api<{ updated: number; merged: boolean }>(`/api/lookups/${id}`, 'PATCH', { value: nv });
+      await reload(); toast(`${r.merged ? 'Uniti' : 'Rinominato'}: ${r.updated} voci aggiornate nella settimana corrente`);
+    } catch (x: any) { toast(x.message); }
+  }
   return (
     <div className="card" style={{ padding: 20 }}>
       <div className="lab">{title}</div>
@@ -29,6 +37,7 @@ function Box({ kind, title, hint }: { kind: LookupKind; title: string; hint: str
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', minHeight: 34 }}>
         {list.map((l) => (
           <span key={l.id} className="opt" style={{ cursor: 'default', gap: 8 }}>{l.value}
+            {can && <button title="Rinomina o unisci" onClick={() => rename(l.id, l.value)} style={{ background: 'none', border: 0, color: 'var(--mut)', padding: 0, display: 'inline-flex' }}><span style={{ width: 14, height: 14, display: 'inline-flex' }}><Ic n="ed" /></span></button>}
             {can && <button title="Rimuovi" onClick={() => del(l.id, l.value)} style={{ background: 'none', border: 0, color: 'var(--mut)', padding: 0, display: 'inline-flex' }}><span style={{ width: 14, height: 14, display: 'inline-flex' }}><Ic n="x" /></span></button>}
           </span>
         ))}
@@ -50,7 +59,7 @@ export default function Elenchi() {
       <div className="top"><h2>Elenchi</h2><span className="muted">Valori selezionabili nelle modali delle azioni</span></div>
       <div className="body" style={{ display: 'grid', gap: 20, maxWidth: 900 }}>
         {KINDS.map((k) => <Box key={k.kind} {...k} />)}
-        <div className="muted" style={{ fontSize: 13 }}>Togliere un valore dall&apos;elenco non modifica le azioni già salvate: il testo resta com&apos;è e compare comunque tra le opzioni quando riapri la voce.</div>
+        <div className="muted" style={{ fontSize: 13 }}>Rimuovere un valore non modifica le azioni già salvate. Per bonificare usa la matita: rinomina il valore e aggiorna le voci della settimana corrente; se il nuovo nome esiste già, i due valori vengono uniti (es. &quot;Cloud pages&quot; in &quot;Cloud Pages&quot;).</div>
       </div>
     </>
   );
