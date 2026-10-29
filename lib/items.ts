@@ -1,6 +1,6 @@
 import { DONE_RE, STATUS_KEYS, type Area, type Status } from './constants';
 
-const TXT = ['code', 'type', 'description', 'priority', 'requested_date', 'golive_date', 'owner', 'estimate', 'contract'] as const;
+const TXT = ['code', 'type', 'description', 'priority', 'requested_date', 'golive_date', 'owner', 'estimate', 'contract', 'activity'] as const;
 
 export type ItemInput = Partial<Record<(typeof TXT)[number], string>> & { status?: Status };
 

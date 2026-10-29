@@ -15,9 +15,17 @@ export default function Ticket() {
   function parse() {
     return txt.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
       const t = l.split('\t');
-      if (t.length >= 2) return { area: 'AMS', code: t[0].trim(), description: t[1].trim(), owner: t[2]?.trim() ?? '', priority: t[3]?.trim() ?? 'Medium', requested_date: t[4]?.trim() ?? '' };
+      if (t.length >= 2) return { area: 'AMS', code: t[0].trim(), description: t[1].trim(), owner: t[2]?.trim() ?? '', priority: t[3]?.trim() ?? '', requested_date: t[4]?.trim() ?? '' };
       const m = l.match(/^([A-Za-z]{1,6}-\d+)\s*[-–—:]\s*(.*)$/);
-      return { area: 'AMS', code: m ? m[1] : '', description: (m ? m[2] : l).replace(/\*\*/g, ''), priority: 'Medium' };
+      let body = (m ? m[2] : l).replace(/\*\*/g, '');
+      let activity = '', status = 'ontrack';
+      const t2 = body.match(/\(([^()]*)\)\s*$/);
+      if (t2) {
+        activity = t2[1].trim(); body = body.slice(0, t2.index).trim();
+        const x = activity.toLowerCase();
+        status = /done|complet|chius|closed/.test(x) ? 'completed' : /hold/.test(x) ? 'onhold' : /block/.test(x) ? 'blocked' : /attesa|delay|wait/.test(x) ? 'delay' : 'ontrack';
+      }
+      return { area: 'AMS', code: m ? m[1] : '', description: body, priority: '', activity, status };
     });
   }
   const list = txt.trim() ? parse() : [];

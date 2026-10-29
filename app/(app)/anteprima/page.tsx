@@ -28,7 +28,7 @@ export default function Anteprima() {
         <button className="btn pri" onClick={() => setExp(true)}><Ic n="dl" />Esporta</button></div>
       <div className="body" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,300px)', gap: '18px 20px' }}>
-          {slides.map((s, i) => <div key={i}><Thumb s={s} deck={d} /><div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{i + 1} · {s.kind === 'table' ? s.title + (s.part ? ` (${s.part})` : '') : s.kind}</div></div>)}
+          {slides.map((s, i) => <div key={i}><Thumb s={s} deck={d} no={i + 1} /><div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{i + 1} · {s.kind === 'table' ? s.title + (s.part ? ` (${s.part})` : '') : s.kind}</div></div>)}
         </div>
         <div className="card" style={{ padding: 18 }}>
           <div className="lab">Dati cover</div>

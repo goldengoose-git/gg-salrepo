@@ -5,7 +5,7 @@ import Modal from '@/components/Modal';
 import { Ic } from '@/components/icons';
 import { BAR_STATUS, LANES, lanesFor, type BarStatus, type Lane } from '@/lib/constants';
 import { api } from '@/lib/client';
-import { packRows, todayPos } from '@/lib/slides';
+import { layoutBars, todayPos } from '@/lib/slides';
 import type { Bar } from '@/lib/types';
 
 const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -46,28 +46,38 @@ export default function Timeline() {
   return (
     <>
       <div className="top"><h2>Timeline progetti {state!.deck.year}</h2><span className="sp" />
-        <div style={{ display: 'flex', gap: 12, fontSize: 12, color: '#B6B9C2', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--fg2)', alignItems: 'center' }}>
           {(Object.keys(BAR_STATUS) as BarStatus[]).map((k) => <span key={k}><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: BAR_STATUS[k].color, marginRight: 6 }} />{BAR_STATUS[k].label}</span>)}
         </div>
         <button className="btn pri" onClick={() => open()}><Ic n="plus" />Nuova attività</button></div>
       <div className="body">
         <div className="card tl">
-          <div className="tl-head"><div style={{ flex: 'none', width: 96 }} />{MONTHS.map((m) => <div key={m}>{m}</div>)}</div>
+          <div className="tl-head" style={{ borderBottom: 0 }}><div style={{ flex: 'none', width: 96 }} />{[1, 2, 3, 4].map((q) => <div key={q} style={{ flex: 3, borderLeft: '1px solid var(--line2)', color: 'var(--fg)', fontWeight: 800 }}>Q{q}</div>)}</div>
+          <div className="tl-head"><div style={{ flex: 'none', width: 96 }} />{MONTHS.map((m, i) => <div key={m} style={{ borderLeft: i % 3 === 0 ? '1px solid var(--line2)' : undefined }}>{m}</div>)}</div>
           {LANES.map((lane) => {
-            const bs = bars.filter((b) => b.lane === lane);
-            const packed = packRows(bs);
-            const rows = Math.max(1, ...bs.map((b) => (packed.get(b) ?? 0) + 1));
+            const L = layoutBars(bars.filter((b) => b.lane === lane).map((b) => ({ label: b.label, status: b.status, start_m: b.start_m, end_m: b.end_m, id: b.id })), 1000, 7);
+            const byKey = bars.filter((b) => b.lane === lane);
             const editable = mine.includes(lane);
+            const PITCH = 32;
             return (
-              <div className="tl-lane" key={lane}>
+              <div className="tl-lane" key={lane} style={{ background: lane === 'CROSS' ? 'var(--rowh)' : undefined }}>
                 <b>{lane}{!editable && <div className="muted" style={{ fontSize: 10, fontWeight: 400 }}>sola lettura</div>}</b>
-                <div className="tl-grid" style={{ height: rows * 34 + 14 }}>
-                  {bs.map((b) => (
-                    <button key={b.id} className="tl-bar" disabled={!editable} onClick={() => open(b)} title={b.label}
-                      style={{ left: `${(b.start_m / 12) * 100}%`, width: `${((b.end_m - b.start_m) / 12) * 100}%`, top: 8 + (packed.get(b) ?? 0) * 34, background: BAR_STATUS[b.status].color, color: BAR_STATUS[b.status].text, cursor: editable ? 'pointer' : 'default' }}>
-                      {b.label}
-                    </button>
-                  ))}
+                <div className="tl-grid" style={{ height: L.rows * PITCH + 14, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,.035) 50%, transparent 50%)', backgroundSize: `${100 / 6}% 100%` }}>
+                  {[3, 6, 9].map((m) => <div key={m} style={{ position: 'absolute', left: `${(m / 12) * 100}%`, top: 0, bottom: 0, width: 1, background: 'var(--line2)' }} />)}
+                  {L.bars.map((pb, k) => {
+                    const b = byKey.find((x) => x.label === pb.label && x.start_m === pb.start && x.end_m === pb.end) ?? byKey[k];
+                    const left = (pb.start / 12) * 100, w = ((pb.end - pb.start) / 12) * 100, top = 7 + pb.row * PITCH;
+                    return (
+                      <div key={b.id + k}>
+                        <button className="tl-bar" disabled={!editable} onClick={() => open(b)} title={b.label}
+                          style={{ left: `${left}%`, width: `${w}%`, top, height: 26, background: BAR_STATUS[pb.status].color, color: BAR_STATUS[pb.status].text, cursor: editable ? 'pointer' : 'default' }}>
+                          {pb.out === 'in' ? pb.label : ''}
+                        </button>
+                        {pb.out === 'right' && <span className="tl-out" style={{ left: `calc(${left + w}% + 6px)`, top }}>{pb.label}</span>}
+                        {pb.out === 'left' && <span className="tl-out" style={{ right: `calc(${100 - left}% + 6px)`, top, textAlign: 'right' }}>{pb.label}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

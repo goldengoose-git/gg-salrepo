@@ -30,7 +30,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
   const Opt = (v: string, t: string, d: string, cur: string, on: () => void) => (
-    <button type="button" onClick={on} style={{ flex: 1, textAlign: 'left', padding: 12, borderRadius: 10, color: '#fff', background: cur === v ? '#2a2020' : '#252830', border: cur === v ? '2px solid #E0301E' : '1px solid #3a3e49' }}>
+    <button type="button" onClick={on} style={{ flex: 1, textAlign: 'left', padding: 12, borderRadius: 10, color: 'var(--fgb)', background: cur === v ? 'var(--sel)' : 'var(--panel)', border: cur === v ? '2px solid #E0301E' : '1px solid var(--line2)' }}>
       <b>{t}</b><div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{d}</div>
     </button>
   );
@@ -40,14 +40,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         <button className="btn" onClick={onClose}>Annulla</button><button className="btn pri" disabled={!sum || busy} onClick={run}>{busy ? 'Importo…' : 'Importa'}</button></>}>
       <div className="grid">
         <div className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); readFile(e.dataTransfer.files[0]); }}>
-          <Ic n="up" /><b style={{ color: '#E8E9EC' }}>Trascina qui il file .json</b>
+          <Ic n="up" /><b style={{ color: 'var(--fg)' }}>Trascina qui il file .json</b>
           <span>Accetta i deck esportati dal tool locale (Golden_Goose_SAL_deck) e gli export di questa app</span>
           <button className="btn" onClick={() => ref.current?.click()}>Scegli file</button>
           <input ref={ref} type="file" accept=".json,application/json" hidden onChange={(e) => readFile(e.target.files?.[0])} />
         </div>
         <div className="f"><label className="lab">Oppure incolla il JSON</label>
           <textarea style={{ height: 90, fontFamily: 'ui-monospace,monospace', fontSize: 12 }} value={text} onChange={(e) => check(e.target.value)} /></div>
-        {sum && <div className="card" style={{ padding: 14, background: '#1b1d22' }}>
+        {sum && <div className="card" style={{ padding: 14, background: 'var(--bg)' }}>
           <div className="lab" style={{ marginBottom: 8 }}>Nel file</div>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}><span><b>{sum.mc}</b> azioni MC</span><span><b>{sum.sc}</b> azioni SC</span><span><b>{sum.ams}</b> ticket AMS</span><span><b>{sum.archived}</b> in archivio</span><span><b>{sum.bars}</b> barre timeline</span></div>
           <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>Come {me.role} verranno importate solo le voci della tua area ({me.role === 'MC' ? 'MC; lane SFMC e CROSS' : 'SC e AMS; lane SFSC'}).</div>

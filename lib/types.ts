@@ -8,7 +8,7 @@ export type Deck = {
 };
 export type Item = {
   id: string; deck_id: string; area: Area; position: number; code: string; type: string; description: string;
-  priority: string; requested_date: string; golive_date: string; owner: string; estimate: string; contract: string;
+  priority: string; requested_date: string; golive_date: string; owner: string; estimate: string; contract: string; activity: string;
   status: Status; archived_at: string | null; closed_at: string | null; updated_by: string | null; updated_at: string;
 };
 export type Bar = {

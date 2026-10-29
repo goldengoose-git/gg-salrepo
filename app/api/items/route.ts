@@ -19,10 +19,10 @@ export async function POST(req: Request) {
     const pos = await q<{ m: number }>('select coalesce(max(position),0)::int + 1 as m from items where deck_id=$1 and area=$2', [deck.id, area]);
     const done = c.status === 'completed';
     const r = await q<{ id: string }>(
-      `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, status, archived_at, closed_at, updated_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, ${done ? 'now()' : 'null'}, ${done ? 'now()' : 'null'}, $14) returning id`,
+      `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, updated_by)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, ${done ? 'now()' : 'null'}, ${done ? 'now()' : 'null'}, $15) returning id`,
       [deck.id, area, pos[0].m, c.code ?? '', c.type ?? '', c.description ?? '', c.priority ?? '', c.requested_date ?? '', c.golive_date ?? '',
-        c.owner ?? '', c.estimate ?? '', c.contract ?? '', c.status ?? 'ontrack', me.username]
+        c.owner ?? '', c.estimate ?? '', c.contract ?? '', c.activity ?? '', c.status ?? 'ontrack', me.username]
     );
     created.push(r[0].id);
   }

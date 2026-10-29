@@ -48,6 +48,9 @@ npm run db:migrate        # tabelle + utenti mc/sc + primo deck
 ```
 `db:migrate` si può rilanciare: se cambi `MC_PASSWORD` / `SC_PASSWORD` aggiorna le password.
 
+### Aggiornamento da una versione precedente
+Se hai già fatto la migrazione: rilancia `npm run db:migrate` (aggiunge la colonna `activity`, non tocca i dati), poi fai push su GitHub. Per ricaricare i dati dal JSON usa `npm run db:import -- ./file.json --replace`.
+
 ### 5. Caricare il deck attuale (facoltativo)
 Esporta il JSON dal tool locale (pulsante di export deck), poi:
 ```bash
@@ -81,3 +84,8 @@ db/schema.sql      schema Neon
 - Timeline: le barre si regolano per terzi di mese, senza trascinamento.
 - Ticket AMS: una riga per ticket (nel tool locale erano un blocco unico con elenco).
 - Il login non ha limite ai tentativi: usa password lunghe.
+
+## Aggiornamento (restyle)
+- Dopo aver scaricato questa versione esegui di nuovo `npm install` e `npm run db:migrate` (crea la tabella `settings` per il logo del login).
+- Opzionale: `npm run db:import -- <file.json> --replace` per ricaricare i dati con il campo Activity Status.
+- Tema chiaro/scuro: pulsante nella barra laterale e nel login. Logo login: *Sfondi e loghi*.

@@ -38,6 +38,7 @@ create table if not exists items (
   owner text not null default '',
   estimate text not null default '',
   contract text not null default '',
+  activity text not null default '',
   status text not null default 'ontrack' check (status in ('ontrack','delay','blocked','onhold','completed')),
   archived_at timestamptz,
   closed_at timestamptz,
@@ -81,3 +82,10 @@ create table if not exists audit_log (
   entity_id text,
   detail jsonb
 );
+
+alter table items add column if not exists activity text not null default '';
+;
+create table if not exists settings (
+  key text primary key,
+  value text
+)

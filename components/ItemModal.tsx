@@ -6,13 +6,14 @@ import type { Item } from '@/lib/types';
 import { useApp } from './AppShell';
 import Modal from './Modal';
 import { StatusPill } from './StatusPill';
+import { Prio } from '@/lib/prio';
 
-const EMPTY = { code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status };
+const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status };
 
 export default function ItemModal({ area, item, label, onClose }: { area: Area; item?: Item; label: string; onClose: () => void }) {
   const { reload, toast } = useApp();
   const [f, setF] = useState({ ...EMPTY, ...(item ? {
-    code: item.code, type: item.type, description: item.description, priority: item.priority, requested_date: item.requested_date,
+    activity: item.activity, code: item.code, type: item.type, description: item.description, priority: item.priority, requested_date: item.requested_date,
     golive_date: item.golive_date, owner: item.owner, estimate: item.estimate, contract: item.contract, status: item.status } : {}) });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -49,18 +50,29 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
         {ams && L('Codice ticket', <input value={f.code} onChange={set('code')} placeholder="AC-1234" />)}
         {!ams && area === 'MC' && L('Type', <input value={f.type} onChange={set('type')} placeholder="Journey, Email, Data…" />)}
         {L(ams ? 'Subject' : 'Description', <textarea value={f.description} onChange={set('description')} />, ams ? 2 : 3)}
-        {L('Priorità', <select value={f.priority} onChange={set('priority')}><option value="" />{PRIORITIES.map((p) => <option key={p}>{p}</option>)}</select>)}
+        <div className="f" style={{ gridColumn: 'span 3' }}>
+          <label className="lab">Priorità</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {PRIORITIES.map((p) => (
+              <button type="button" key={p} onClick={() => setF({ ...f, priority: f.priority === p ? '' : p })} className="chip"
+                style={{ height: 32, padding: '0 12px', color: 'var(--fgb)', border: f.priority === p ? '2px solid var(--fgb)' : '1px solid var(--line2)', background: f.priority === p ? 'var(--line2)' : 'var(--hover)' }}>
+                <Prio p={p} size={16} />
+              </button>
+            ))}
+          </div>
+        </div>
         {L('Owner', <input value={f.owner} onChange={set('owner')} />)}
         {L(ams ? 'Opened' : 'Requested date', <input value={f.requested_date} onChange={set('requested_date')} placeholder="gg/mm" />)}
         {!ams && L('GoLive date', <input value={f.golive_date} onChange={set('golive_date')} placeholder="gg/mm" />)}
         {!ams && L('Stima', <input value={f.estimate} onChange={set('estimate')} placeholder="5 gg" />)}
-        {L('Contract type e status', <input value={f.contract} onChange={set('contract')} />, ams ? 3 : 2)}
+        {L('Contract type e status', <input value={f.contract} onChange={set('contract')} />, ams ? 2 : 2)}
+        {L(ams ? 'Stato ticket in slide' : 'Activity status (testo in slide)', <input value={f.activity} onChange={set('activity')} placeholder={ams ? 'new, in progress, in attesa di feedback da GG…' : 'Ongoing, To Do, Done…'} />)}
         <div className="f" style={{ gridColumn: 'span 3' }}>
           <label className="lab">Activity status</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {STATUS_KEYS.map((s) => (
               <button type="button" key={s} onClick={() => setF({ ...f, status: s })} className="pill"
-                style={{ background: STATUS[s].color, color: STATUS[s].text, border: f.status === s ? '2px solid #fff' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
+                style={{ background: STATUS[s].color, color: STATUS[s].text, border: f.status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
                 {STATUS[s].label}
               </button>
             ))}

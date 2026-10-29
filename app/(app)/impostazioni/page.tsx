@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/AppShell';
 import { Thumb } from '@/components/SlideView';
 import { Ic } from '@/components/icons';
@@ -37,12 +37,51 @@ function Slot({ k, t, h, logo }: (typeof SLOTS)[number]) {
       <div className="drop" style={{ height: 116, background: url ? (logo ? '#fff' : '#000') : undefined, padding: 6 }}
         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); up(e.dataTransfer.files[0]); }}>
         {url ? <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: logo ? 'contain' : 'cover', width: logo ? undefined : '100%', height: logo ? undefined : '100%' }} />
-          : <><Ic n="up" /><b style={{ color: '#E8E9EC' }}>{busy ? 'Carico…' : 'Trascina qui'}</b><span>{h}</span></>}
+          : <><Ic n="up" /><b style={{ color: 'var(--fg)' }}>{busy ? 'Carico…' : 'Trascina qui'}</b><span>{h}</span></>}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <button className="btn" style={{ height: 30 }} onClick={() => ref.current?.click()} disabled={busy}>{url ? 'Sostituisci' : 'Scegli file'}</button>
         {url && <button className="btn danger" style={{ height: 30 }} onClick={async () => { await api('/api/deck', 'PATCH', { [k]: '' }); await reload(); }}>Rimuovi</button>}
         <input ref={ref} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={(e) => up(e.target.files?.[0])} />
+      </div>
+    </div>
+  );
+}
+
+function LoginLogo() {
+  const { toast } = useApp();
+  const ref = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { fetch('/api/branding').then((r) => r.json()).then((j) => setUrl(j.login_logo_url)).catch(() => {}); }, []);
+  async function save(u: string) { await api('/api/branding', 'PATCH', { login_logo_url: u }); setUrl(u || null); }
+  async function up(file?: File) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch('/api/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      await save(j.url); toast('Logo login aggiornato');
+    } catch (e: any) { toast(e.message); }
+    setBusy(false);
+  }
+  return (
+    <div className="card" style={{ padding: 20, marginTop: 20 }}>
+      <div className="lab" style={{ marginBottom: 10 }}>Logo pagina di login</div>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <div className="drop" style={{ width: 220, height: 90, background: '#fff', padding: 8, flex: 'none' }}>
+          {url ? <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span style={{ color: '#777' }}>Nessun logo</span>}
+        </div>
+        <div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn" disabled={busy} onClick={() => ref.current?.click()}>{busy ? 'Carico…' : url ? 'Sostituisci' : 'Carica logo'}</button>
+            {url && <button className="btn danger" onClick={() => save('')}>Rimuovi</button>}
+            <input ref={ref} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={(e) => up(e.target.files?.[0])} />
+          </div>
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Visibile a tutti nella schermata di accesso, valido per ogni settimana.</div>
+        </div>
       </div>
     </div>
   );
@@ -59,6 +98,7 @@ export default function Impostazioni() {
         <div className="card" style={{ padding: 20 }}>
           <div className="grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>{SLOTS.map((s) => <Slot key={s.k} {...s} />)}</div>
           <div className="muted" style={{ fontSize: 12.5, marginTop: 18, lineHeight: 1.5 }}>PNG, JPG, SVG o WEBP fino a 4 MB. I file sono salvati su Vercel Blob e usati in anteprima, PDF e PPTX.</div>
+          <LoginLogo />
         </div>
         <div className="card" style={{ padding: 20 }}>
           <div className="lab" style={{ marginBottom: 10 }}>Anteprima cover</div>

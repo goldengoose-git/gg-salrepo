@@ -18,8 +18,8 @@ export async function POST(req: Request) {
   );
   const id = nd[0].id;
   await q(
-    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, status, updated_by)
-     select $1, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, status, $3
+    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, updated_by)
+     select $1, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, $3
      from items where deck_id = $2 and archived_at is null`,
     [id, cur.id, me.username]
   );

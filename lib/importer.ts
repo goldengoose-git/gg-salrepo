@@ -3,7 +3,7 @@ import { DONE_RE, LANES, STATUS_KEYS, areasFor, lanesFor, type Area, type BarSta
 
 export type ImpItem = Partial<{
   area: Area; code: string; type: string; description: string; priority: string; requested_date: string; golive_date: string;
-  owner: string; estimate: string; contract: string; status: Status; archived: boolean;
+  owner: string; estimate: string; contract: string; activity: string; status: Status; archived: boolean;
 }> & { area: Area };
 export type ImpBar = { lane: Lane; label: string; status: BarStatus; start_m: number; end_m: number; row: number };
 export type Parsed = { deck: Partial<{ client: string; subtitle: string; date_label: string; year: number }>; items: ImpItem[]; bars: ImpBar[] };
@@ -11,20 +11,23 @@ export type Parsed = { deck: Partial<{ client: string; subtitle: string; date_la
 const strip = (s: any) => String(s ?? '').replace(/\*\*/g, '').trim();
 const BAR_OK = ['completed', 'wip', 'analysis', 'estimate'];
 
-function ticketStatus(txt: string, fallback: Status): { text: string; status: Status } {
+function ticketStatus(txt: string, fallback: Status): { text: string; status: Status; tag: string } {
   const m = txt.match(/\*{0,2}\(([^)]*)\)\*{0,2}\s*$/);
   let status = fallback;
   let text = txt;
+  let tag = '';
   if (m) {
+    tag = strip(m[1]);
     const t = m[1].toLowerCase();
     text = txt.slice(0, m.index).trim();
     if (/done|complet|chius|closed/.test(t)) status = 'completed';
     else if (/block/.test(t)) status = 'blocked';
     else if (/delay|ritard/.test(t)) status = 'delay';
     else if (/hold|sospes/.test(t)) status = 'onhold';
+    else if (/attesa|wait/.test(t)) status = 'delay';
     else status = 'ontrack';
   }
-  return { text, status };
+  return { text, status, tag };
 }
 
 // Formato nativo (export JSON di questa app) oppure deck del tool locale "Golden_Goose_SAL_deck"
@@ -57,10 +60,11 @@ export function parseAny(j: any): Parsed {
     const cols: string[] = (s.columns ?? []).map((c: any) => String(c.name ?? ''));
     const ix = (re: RegExp) => cols.findIndex((c) => re.test(c));
     const iType = ix(/^type$/i), iDesc = ix(/descri|subject/i), iPri = ix(/priorit/i), iReq = ix(/request/i),
-      iGo = ix(/golive/i), iOwn = ix(/owner/i), iEst = ix(/stima/i), iCon = ix(/contract/i);
+      iGo = ix(/golive|release/i), iAct = ix(/activity/i), iOwn = ix(/owner/i), iEst = ix(/stima/i), iCon = ix(/contract/i);
     const isCompletedSlide = /^completed/i.test(s.title ?? '') || s.rows.every((r: any) => r.completed);
     const isHold = !!s.hold;
     const area: Area = s.theme === 'sc' ? 'SC' : 'MC';
+    const rawAct = (r: any) => (iAct >= 0 ? strip((r.cells ?? [])[iAct]) : '');
     for (const r of s.rows) {
       const c = r.cells ?? [];
       const cell = (i: number) => (i >= 0 ? strip(c[i]) : '');
@@ -70,11 +74,11 @@ export function parseAny(j: any): Parsed {
           const raw = String(it);
           const m = raw.replace(/\*\*/g, '**').match(/^\s*([A-Za-z]{1,6}-\d+)\s*[-–—:]\s*([\s\S]*)$/);
           const code = m ? m[1] : '';
-          const { text, status } = ticketStatus(m ? m[2] : raw, st === 'completed' ? 'ontrack' : st);
+          const { text, status, tag } = ticketStatus(m ? m[2] : raw, st === 'completed' ? 'ontrack' : st);
           const done = DONE_RE.test(raw) || status === 'completed';
           out.items.push({
             area: 'AMS', code, description: strip(text), status: done ? 'completed' : status, archived: done,
-            owner: cell(iOwn), contract: cell(iCon), priority: cell(iPri),
+            owner: cell(iOwn), contract: cell(iCon), priority: cell(iPri), activity: tag,
           });
         }
         continue;
@@ -82,7 +86,7 @@ export function parseAny(j: any): Parsed {
       const done = isCompletedSlide || r.completed || st === 'completed';
       out.items.push({
         area, type: cell(iType), description: cell(iDesc), priority: cell(iPri), requested_date: cell(iReq), golive_date: cell(iGo),
-        owner: cell(iOwn), estimate: cell(iEst), contract: cell(iCon),
+        owner: cell(iOwn), estimate: cell(iEst), contract: cell(iCon), activity: rawAct(r),
         status: done ? 'completed' : st, archived: done || isHold,
       });
     }
@@ -108,15 +112,15 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
     const rows = items.map((i) => ({
       area: i.area, position: ++base[i.area], code: i.code ?? '', type: i.type ?? '', description: i.description ?? '',
       priority: i.priority ?? '', requested_date: i.requested_date ?? '', golive_date: i.golive_date ?? '', owner: i.owner ?? '',
-      estimate: i.estimate ?? '', contract: i.contract ?? '', status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
+      estimate: i.estimate ?? '', contract: i.contract ?? '', activity: i.activity ?? '', status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
       archived: !!i.archived || i.status === 'completed',
     }));
     if (rows.length) {
       await q(
-        `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, status, archived_at, closed_at, updated_by)
-         select $1::uuid, x.area, x.position, x.code, x.type, x.description, x.priority, x.requested_date, x.golive_date, x.owner, x.estimate, x.contract, x.status,
+        `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, updated_by)
+         select $1::uuid, x.area, x.position, x.code, x.type, x.description, x.priority, x.requested_date, x.golive_date, x.owner, x.estimate, x.contract, x.activity, x.status,
                 case when x.archived then now() end, case when x.archived then now() end, $3
-         from jsonb_to_recordset($2::jsonb) as x(area text, position int, code text, type text, description text, priority text, requested_date text, golive_date text, owner text, estimate text, contract text, status text, archived boolean)`,
+         from jsonb_to_recordset($2::jsonb) as x(area text, position int, code text, type text, description text, priority text, requested_date text, golive_date text, owner text, estimate text, contract text, activity text, status text, archived boolean)`,
         [o.deckId, JSON.stringify(rows), o.user]
       );
     }

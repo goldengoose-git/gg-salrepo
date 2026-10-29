@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { api } from '@/lib/client';
 import type { AppState, Me } from '@/lib/types';
 import { Ic } from './icons';
+import ThemeToggle from './ThemeToggle';
 
 type Ctx = { me: Me; state: AppState | null; reload: () => Promise<void>; toast: (m: string) => void };
 const C = createContext<Ctx>(null as any);
@@ -40,8 +41,8 @@ export default function AppShell({ me, children }: { me: Me; children: React.Rea
             <Link key={n.href} href={n.href} className={'nav' + (path.startsWith(n.href) ? ' on' : '')}><Ic n={n.ic} />{n.label}</Link>
           ))}
           <div className="who">
-            <b style={{ color: '#fff' }}>{me.name}</b><br />{me.role === 'MC' ? 'Marketing Cloud' : 'CRM e Service Cloud'}
-            <br />
+            <b style={{ color: 'var(--fgb)' }}>{me.name}</b><br />{me.role === 'MC' ? 'Marketing Cloud' : 'CRM e Service Cloud'}
+            <div style={{ marginTop: 10 }}><ThemeToggle style={{ height: 28, fontSize: 12.5 }} /></div>
             <button onClick={async () => { await api('/api/logout', 'POST'); router.push('/login'); router.refresh(); }}>Esci</button>
           </div>
         </aside>

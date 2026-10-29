@@ -24,7 +24,7 @@ function Inner() {
         <span className="muted">Nel dialogo di stampa: destinazione &quot;Salva come PDF&quot;, margini &quot;Nessuno&quot;, attiva &quot;Grafica di sfondo&quot;.</span>
       </div>
       <div className="print-wrap" style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: 20, alignItems: 'center' }}>
-        {slides.map((s, i) => <SlideView key={i} s={s} deck={st.deck} />)}
+        {slides.map((s, i) => <SlideView key={i} s={s} deck={st.deck} no={i + 1} />)}
       </div>
     </>
   );

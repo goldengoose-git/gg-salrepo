@@ -2,10 +2,12 @@ import { jwtVerify } from 'jose';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC = ['/login', '/api/login'];
+const PUBLIC_GET = ['/api/branding'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PUBLIC.some((p) => pathname === p)) return NextResponse.next();
+  if (req.method === 'GET' && PUBLIC_GET.includes(pathname)) return NextResponse.next();
   const t = req.cookies.get('sal_session')?.value;
   let ok = false;
   if (t && process.env.SESSION_SECRET) {

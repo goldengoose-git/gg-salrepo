@@ -7,6 +7,7 @@ import { useApp } from './AppShell';
 import { Ic } from './icons';
 import ItemModal from './ItemModal';
 import { StatusPill } from './StatusPill';
+import { Prio } from '@/lib/prio';
 
 export default function ItemTable({ area, prefix, label }: { area: Area; prefix: string; label: string }) {
   const { me, state, reload, toast } = useApp();
@@ -45,8 +46,8 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                 <tr key={i.id} className="r" onClick={() => canEdit && setEdit(i)}>
                   <td><b>{ams ? i.code : `${prefix}-${String(n).padStart(2, '0')}`}</b></td>
                   {area === 'MC' && <td>{i.type}</td>}
-                  <td style={{ minWidth: 240 }}>{i.description}</td><td>{i.priority}</td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}
-                  <td>{i.owner}</td>{!ams && <td>{i.estimate}</td>}{!ams && <td>{i.contract}</td>}<td><StatusPill s={i.status} /></td>
+                  <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}
+                  <td>{i.owner}</td>{!ams && <td>{i.estimate}</td>}{!ams && <td>{i.contract}</td>}<td><StatusPill s={i.status} />{ams && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
                   <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                     {canEdit && <>
                       <button className="ib" title="Su" disabled={n === 1} onClick={() => act(i.id, { move: 'up' })}><Ic n="up" /></button>{' '}

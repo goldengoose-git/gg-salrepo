@@ -4,12 +4,12 @@ export type Status = 'ontrack' | 'delay' | 'blocked' | 'onhold' | 'completed';
 export type BarStatus = 'completed' | 'wip' | 'analysis' | 'estimate';
 export type Lane = 'SFMC' | 'CROSS' | 'SFSC';
 
-export const STATUS: Record<Status, { label: string; color: string; text: string }> = {
-  ontrack: { label: 'On Track', color: '#34A853', text: '#111111' },
-  delay: { label: 'Delay', color: '#FBBC04', text: '#111111' },
-  blocked: { label: 'Blocked', color: '#E0301E', text: '#FFFFFF' },
-  onhold: { label: 'On Hold', color: '#CCCCCC', text: '#111111' },
-  completed: { label: 'Completed', color: '#7135A8', text: '#FFFFFF' },
+export const STATUS: Record<Status, { label: string; color: string; text: string; stripe: string; tint: string; ink: string }> = {
+  ontrack: { label: 'On Track', color: '#34A853', text: '#111111', stripe: '#4FA35B', tint: '#E6F1E8', ink: '#2F7A3B' },
+  delay: { label: 'Delay', color: '#FBBC04', text: '#111111', stripe: '#E9A800', tint: '#FFF3D1', ink: '#8A5F00' },
+  blocked: { label: 'Blocked', color: '#E0301E', text: '#FFFFFF', stripe: '#D2402B', tint: '#F8E0DC', ink: '#A52B18' },
+  onhold: { label: 'On Hold', color: '#CCCCCC', text: '#111111', stripe: '#BDBDBD', tint: '#F4F4F4', ink: '#666666' },
+  completed: { label: 'Completed', color: '#7135A8', text: '#FFFFFF', stripe: '#7135A8', tint: '#EEE4F6', ink: '#5A2A86' },
 };
 export const STATUS_KEYS = Object.keys(STATUS) as Status[];
 
@@ -28,7 +28,7 @@ export const areasFor = (r: Role): Area[] => (r === 'MC' ? ['MC'] : ['SC', 'AMS'
 export const lanesFor = (r: Role): Lane[] => (r === 'MC' ? ['SFMC', 'CROSS'] : ['SFSC']);
 
 export type Col = { name: string; w: number; align: 'l' | 'c' };
-export const COLS: Record<'mc' | 'sc' | 'ams' | 'completed', Col[]> = {
+export const COLS: Record<'mc' | 'sc' | 'ams' | 'amsblock' | 'completed', Col[]> = {
   mc: [
     { name: 'ID', w: 5, align: 'c' }, { name: 'Type', w: 9, align: 'c' }, { name: 'Description', w: 27, align: 'l' },
     { name: 'Priorità', w: 8, align: 'c' }, { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' },
@@ -44,6 +44,10 @@ export const COLS: Record<'mc' | 'sc' | 'ams' | 'completed', Col[]> = {
     { name: 'ID', w: 5, align: 'c' }, { name: 'Ticket', w: 10, align: 'c' }, { name: 'Subject', w: 38, align: 'l' },
     { name: 'Priorità', w: 9, align: 'c' }, { name: 'Owner', w: 14, align: 'l' }, { name: 'Opened', w: 10, align: 'c' },
     { name: 'Activity Status', w: 14, align: 'c' },
+  ],
+  amsblock: [
+    { name: 'ID', w: 5, align: 'c' }, { name: 'Description', w: 62, align: 'l' }, { name: 'Stima', w: 7, align: 'c' },
+    { name: 'Contract Type & Status', w: 14, align: 'l' }, { name: 'Activity Status', w: 12, align: 'c' },
   ],
   completed: [
     { name: 'Type', w: 8, align: 'c' }, { name: 'Description', w: 35, align: 'l' }, { name: 'Priorità', w: 7, align: 'c' },
