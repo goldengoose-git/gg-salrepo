@@ -13,10 +13,10 @@ export async function createSession(me: Me) {
   const token = await new SignJWT({ ...me })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('14d')
+    .setExpirationTime('2d')
     .sign(key());
   (await cookies()).set(COOKIE, token, {
-    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 14,
+    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 2,
   });
 }
 export async function destroySession() {
