@@ -37,7 +37,7 @@ const rowsC = await sql.query(`select area, contract from items`);
 await seed('type_mc', rowsT.filter((r) => r.area === 'MC').map((r) => (r.type || '').trim()));
 await seed('type_sc', rowsT.filter((r) => r.area === 'SC').map((r) => (r.type || '').trim()));
 const parseContract = (t) => { const m = String(t ?? '').trim().match(/^(opex|capex)\s*(?:[–—-]\s*(.*))?$/i); return m ? (m[2] ?? '').trim() : String(t ?? '').trim(); };
-await seed('contract_label', rowsC.filter((r) => r.area !== 'AMS').map((r) => parseContract(r.contract)));
+await seed('contract_label', rowsC.filter((r) => r.area !== 'AMS').map((r) => parseContract(r.contract)).filter((v) => v && v !== '-'));
 await seed('owner', rowsT.filter((r) => r.area !== 'AMS').flatMap((r) => parseOwners(r.owner)));
 
 // --- Stima: solo numero (giorni) oppure "-" ---

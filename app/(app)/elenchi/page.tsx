@@ -9,7 +9,7 @@ function Box({ kind, title, hint }: { kind: LookupKind; title: string; hint: str
   const { me, state, reload, toast } = useApp();
   const [v, setV] = useState('');
   const [busy, setBusy] = useState(false);
-  const can = kind === 'owner' || (kind === 'type_mc' && me.role === 'MC') || (kind === 'type_sc' && me.role === 'SC');
+  const can = kind === 'owner' || kind === 'contract_label' || (kind === 'type_mc' && me.role === 'MC') || (kind === 'type_sc' && me.role === 'SC');
   const list = state!.lookups.filter((l) => l.kind === kind);
   async function add(e: React.FormEvent) {
     e.preventDefault();
