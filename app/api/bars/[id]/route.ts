@@ -1,7 +1,7 @@
 import { LANES, lanesFor, type Lane } from '@/lib/constants';
 import { q } from '@/lib/db';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
-import { cleanBar } from '@/lib/bars';
+import { cleanBar, freeRow } from '@/lib/bars';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,8 +19,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
     lane = b.lane;
   }
   const c = cleanBar({ ...cur, ...b });
-  await q('update pipeline_bars set lane=$1, label=$2, status=$3, start_m=$4, end_m=$5, updated_by=$6, updated_at=now() where id=$7',
-    [lane, c.label, c.status, c.start_m, c.end_m, me.username, id]);
+  // se cambiano lane o date e la riga attuale si sovrappone ad un'altra barra, sposta sulla prima riga libera
+  let row = +cur.row || 0;
+  const others = (await q<any>('select row, start_m::float as start_m, end_m::float as end_m from pipeline_bars where deck_id=$1 and lane=$2 and id<>$3', [cur.deck_id, lane, id]))
+    .map((o: any) => ({ row: +o.row, start_m: +o.start_m, end_m: +o.end_m }));
+  if (lane !== cur.lane || others.some((o) => o.row === row && o.start_m < c.end_m + 0.04 && c.start_m < o.end_m + 0.04)) row = freeRow(others, c.start_m, c.end_m);
+  await q('update pipeline_bars set lane=$1, label=$2, status=$3, start_m=$4, end_m=$5, row=$6, updated_by=$7, updated_at=now() where id=$8',
+    [lane, c.label, c.status, c.start_m, c.end_m, row, me.username, id]);
   await audit(me, 'update', 'bar', id);
   return json({ ok: true });
 }

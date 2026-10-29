@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/AppShell';
 import Modal from '@/components/Modal';
 import { Ic } from '@/components/icons';
@@ -20,6 +20,16 @@ export default function Timeline() {
   const { me, state, reload, toast } = useApp();
   const [d, setD] = useState<Draft | null>(null);
   const [err, setErr] = useState('');
+  const [compact, setCompact] = useState(true);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [gridWidth, setGridWidth] = useState(900);
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const observer = new ResizeObserver(([entry]) => setGridWidth(entry.contentRect.width));
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
   const mine = lanesFor(me.role);
   const bars = state!.bars;
 
@@ -49,42 +59,46 @@ export default function Timeline() {
         <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--fg2)', alignItems: 'center' }}>
           {(Object.keys(BAR_STATUS) as BarStatus[]).map((k) => <span key={k}><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: BAR_STATUS[k].color, marginRight: 6 }} />{BAR_STATUS[k].label}</span>)}
         </div>
+        <button className="btn" onClick={() => setCompact((v) => !v)} aria-pressed={compact}>{compact ? "Vista ampia" : "Vista compatta"}</button>
         <button className="btn pri" onClick={() => open()}><Ic n="plus" />Nuova attività</button></div>
       <div className="body">
         <div className="card tl">
           <div className="tl-head" style={{ borderBottom: 0 }}><div style={{ flex: 'none', width: 96 }} />{[1, 2, 3, 4].map((q) => <div key={q} style={{ flex: 3, borderLeft: '1px solid var(--line2)', color: 'var(--fg)', fontWeight: 800 }}>Q{q}</div>)}</div>
           <div className="tl-head"><div style={{ flex: 'none', width: 96 }} />{MONTHS.map((m, i) => <div key={m} style={{ borderLeft: i % 3 === 0 ? '1px solid var(--line2)' : undefined }}>{m}</div>)}</div>
           {LANES.map((lane) => {
-            const L = layoutBars(bars.filter((b) => b.lane === lane).map((b) => ({ label: b.label, status: b.status, start_m: b.start_m, end_m: b.end_m, id: b.id })), 1000, 7);
             const byKey = bars.filter((b) => b.lane === lane);
             const editable = mine.includes(lane);
-            const PITCH = 32;
+            const PITCH = compact ? 24 : 32;
+            // Layout rows by the actual rendered width, not an assumed 1000px.
+            // Labels stay in their bars with ellipsis and a full-text tooltip.
+            const L = layoutBars(byKey.map((b) => ({ label: b.label, status: b.status, start_m: b.start_m, end_m: b.end_m, row: b.row })));
+            const positioned = byKey.map((b, k) => {
+              const left = Math.max(0, Math.min(100, b.start_m / 12 * 100));
+              const right = Math.max(left, Math.min(100, b.end_m / 12 * 100));
+              return { b, left, width: right - left, row: L.bars[k].row };
+            });
+            const rows = L.rows;
             return (
               <div className="tl-lane" key={lane} style={{ background: lane === 'CROSS' ? 'var(--rowh)' : undefined }}>
                 <b>{lane}{!editable && <div className="muted" style={{ fontSize: 10, fontWeight: 400 }}>sola lettura</div>}</b>
-                <div className="tl-grid" style={{ height: L.rows * PITCH + 14, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,.035) 50%, transparent 50%)', backgroundSize: `${100 / 6}% 100%` }}>
+                <div className="tl-grid" ref={lane === LANES[0] ? gridRef : undefined} style={{ height: rows * PITCH + 10, backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,.035) 50%, transparent 50%)', backgroundSize: `${100 / 6}% 100%` }}>
                   {[3, 6, 9].map((m) => <div key={m} style={{ position: 'absolute', left: `${(m / 12) * 100}%`, top: 0, bottom: 0, width: 1, background: 'var(--line2)' }} />)}
-                  {L.bars.map((pb, k) => {
-                    const b = byKey.find((x) => x.label === pb.label && x.start_m === pb.start && x.end_m === pb.end) ?? byKey[k];
-                    const left = (pb.start / 12) * 100, w = ((pb.end - pb.start) / 12) * 100, top = 7 + pb.row * PITCH;
-                    return (
-                      <div key={b.id + k}>
-                        <button className="tl-bar" disabled={!editable} onClick={() => open(b)} title={b.label}
-                          style={{ left: `${left}%`, width: `${w}%`, top, height: 26, background: BAR_STATUS[pb.status].color, color: BAR_STATUS[pb.status].text, cursor: editable ? 'pointer' : 'default' }}>
-                          {pb.out === 'in' ? pb.label : ''}
-                        </button>
-                        {pb.out === 'right' && <span className="tl-out" style={{ left: `calc(${left + w}% + 6px)`, top }}>{pb.label}</span>}
-                        {pb.out === 'left' && <span className="tl-out" style={{ right: `calc(${100 - left}% + 6px)`, top, textAlign: 'right' }}>{pb.label}</span>}
-                      </div>
-                    );
-                  })}
+                  {positioned.map(({ b, left, width, row }) => (
+                    <button key={b.id} className="tl-bar" disabled={!editable} onClick={() => open(b)} title={b.label}
+                      style={{ left: `${left}%`, width: `${width}%`, top: 5 + row * PITCH, height: compact ? 20 : 26,
+                        fontSize: compact ? 10.5 : 12, padding: compact ? '0 5px' : '0 9px',
+                        background: BAR_STATUS[b.status].color, color: BAR_STATUS[b.status].text,
+                        cursor: editable ? 'pointer' : 'default' }}>
+                      {b.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             );
           })}
           <div className="tl-today" style={{ left: `calc(96px + (100% - 96px) * ${T / 12})` }} />
         </div>
-        <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Clic su una barra per modificarla. MC gestisce SFMC e CROSS, SC gestisce SFSC. La riga rossa è oggi.</div>
+        <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Clic su una barra per modificarla. MC gestisce SFMC e CROSS, SC gestisce SFSC. La riga rossa è oggi. Passa il mouse sulle barre per leggere il titolo completo.</div>
       </div>
       {d && (
         <Modal title={d.id ? 'Modifica attività' : 'Nuova attività'} onClose={() => setD(null)} width={520}

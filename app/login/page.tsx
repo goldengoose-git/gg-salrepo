@@ -21,7 +21,10 @@ export default function Login() {
       'error-callback': () => setTsToken(''),
     });
   }
-  useEffect(() => { mountTs(); });
+  useEffect(() => {
+    mountTs();
+    return () => { try { if (tsId.current !== null) (window as any).turnstile?.remove(tsId.current); } catch {} tsId.current = null; };
+  }, []);
   const [user, setUser] = useState<'mc' | 'sc'>('mc');
   const [pwd, setPwd] = useState('');
   const [err, setErr] = useState('');
@@ -32,7 +35,7 @@ export default function Login() {
   async function go(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr('');
     try { await api('/api/login', 'POST', { username: user, password: pwd, turnstile: tsToken }); router.push('/azioni'); router.refresh(); }
-    catch (x: any) { setErr(x.message); setBusy(false); setTsToken(''); (window as any).turnstile?.reset(tsId.current); }
+    catch (x: any) { setErr(x.message); setBusy(false); setTsToken(''); try { if (tsId.current !== null) (window as any).turnstile?.reset(tsId.current); } catch {} }
   }
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '10px solid #E0301E', padding: 20 }}>

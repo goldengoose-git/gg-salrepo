@@ -11,3 +11,11 @@ export function cleanBar(b: any) {
     start_m: start, end_m: end,
   };
 }
+
+/** Prima riga della lane in cui l'intervallo [start,end] non si sovrappone ad altre barre. */
+export function freeRow(others: { row: number; start_m: number; end_m: number }[], start: number, end: number) {
+  const used = (r: number) => others.some((o) => o.row === r && o.start_m < end + 0.04 && start < o.end_m + 0.04);
+  let r = 0;
+  while (used(r)) r++;
+  return r;
+}

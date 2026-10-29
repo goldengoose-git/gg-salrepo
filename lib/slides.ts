@@ -52,32 +52,28 @@ export function todayPos(d = new Date()) {
 // ---- timeline: assegna le righe tenendo conto anche dell'ingombro dell'etichetta ----
 const CHAR_W = 7.0; // px per carattere a ~11px (stima)
 export function layoutBars(
-  bars: { label: string; status: BarStatus; start_m: number; end_m: number }[],
-  TLW = 1150,
-  cw = CHAR_W
+  bars: { label: string; status: BarStatus; start_m: number; end_m: number; row?: number }[],
+  _TLW = 1150,
+  _cw = CHAR_W
 ): { bars: PBar[]; rows: number } {
-  const items = bars.map((b) => {
-    const xs = (b.start_m / 12) * TLW, xe = (b.end_m / 12) * TLW;
-    const lw = b.label.length * cw + 14;
-    let out: PBar['out'] = 'in', a = xs, e = xe;
-    if (lw > xe - xs) {
-      if (xe + 6 + lw <= TLW + 4) { out = 'right'; e = xe + 6 + lw; }
-      else { out = 'left'; a = Math.max(0, xs - 6 - lw); }
-    }
-    return { b, xs, xe, out, a, e };
-  });
-  items.sort((x, y) => x.a - y.a || x.e - y.e);
-  const ends: number[] = [];
+  // Come nel deck originale: se le attività hanno una riga assegnata (row) viene rispettata;
+  // altrimenti le barre si dispongono in automatico sulla prima riga libera. Etichetta sempre dentro la barra.
+  const curated = bars.some((b) => (b.row ?? 0) > 0);
   const res: PBar[] = [];
-  for (const it of items) {
-    let r = ends.findIndex((e) => e + 4 <= it.a);
-    if (r < 0) { r = ends.length; ends.push(0); }
-    ends[r] = it.e;
-    res.push({ label: it.b.label, status: it.b.status, start: it.b.start_m, end: it.b.end_m, row: r, out: it.out });
+  if (curated) {
+    for (const b of bars) res.push({ label: b.label, status: b.status, start: b.start_m, end: b.end_m, row: Math.max(0, Math.floor(b.row ?? 0)), out: 'in' });
+  } else {
+    const ends: number[] = [];
+    for (const b of [...bars].sort((x, y) => x.start_m - y.start_m || x.end_m - y.end_m)) {
+      let r = ends.findIndex((e) => e + 0.04 <= b.start_m);
+      if (r < 0) { r = ends.length; ends.push(0); }
+      ends[r] = b.end_m;
+      res.push({ label: b.label, status: b.status, start: b.start_m, end: b.end_m, row: r, out: 'in' });
+    }
   }
-  return { bars: res, rows: Math.max(1, ends.length) };
+  return { bars: res, rows: Math.max(1, ...res.map((x) => x.row + 1)) };
 }
-export const PIPE = { top: 114, bottom: 676, laneGap: 12, minPitch: 14, maxPitch: 24 };
+export const PIPE = { top: 145, bottom: 676, laneGap: 8, minPitch: 12, maxPitch: 20 };
 export const pipePitch = (rows: number, lanes: number) =>
   Math.max(11, Math.min(PIPE.maxPitch, (PIPE.bottom - PIPE.top - lanes * PIPE.laneGap) / Math.max(1, rows)));
 
