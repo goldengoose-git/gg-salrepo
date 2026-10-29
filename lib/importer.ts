@@ -102,7 +102,13 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
   let nItems = 0, nBars = 0;
 
   if (o.scope !== 'timeline') {
-    const items = p.items.filter((i) => areas.includes(i.area));
+    let items = p.items.filter((i) => areas.includes(i.area));
+    if (o.mode === 'merge') {
+      const ex = await q<any>('select area, code, description from items where deck_id = $1', [o.deckId]);
+      const key = (a: string, c: string, d: string) => `${a}|${c ?? ''}|${d ?? ''}`;
+      const have = new Set(ex.map((e: any) => key(e.area, e.code, e.description)));
+      items = items.filter((i) => !have.has(key(i.area, i.code ?? '', i.description ?? '')));
+    }
     if (o.mode === 'replace') await q('delete from items where deck_id = $1 and area = any($2)', [o.deckId, areas]);
     const base: Record<string, number> = {};
     for (const a of areas) {
@@ -128,7 +134,14 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
   }
 
   if (o.scope !== 'mine') {
-    const bars = p.bars.filter((b) => lanes.includes(b.lane));
+    let bars = p.bars.filter((b) => lanes.includes(b.lane));
+    if (o.mode === 'merge') {
+      // in unione salta le barre già presenti (stessa lane, nome e periodo): evita i duplicati se reimporti
+      const ex = await q<any>('select lane, label, start_m, end_m from pipeline_bars where deck_id = $1', [o.deckId]);
+      const key = (l: string, t: string, a: any, b: any) => `${l}|${t}|${Number(a)}|${Number(b)}`;
+      const have = new Set(ex.map((e: any) => key(e.lane, e.label, e.start_m, e.end_m)));
+      bars = bars.filter((b) => !have.has(key(b.lane, b.label, b.start_m, b.end_m)));
+    }
     if (o.mode === 'replace') await q('delete from pipeline_bars where deck_id = $1 and lane = any($2)', [o.deckId, lanes]);
     if (bars.length) {
       await q(
