@@ -1,10 +1,27 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/client';
 
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 export default function Login() {
+  const tsRef = useRef<HTMLDivElement>(null);
+  const tsId = useRef<any>(null);
+  const [tsToken, setTsToken] = useState('');
+  function mountTs() {
+    const w: any = window;
+    if (!SITE_KEY || !w.turnstile || !tsRef.current || tsId.current !== null) return;
+    tsId.current = w.turnstile.render(tsRef.current, {
+      sitekey: SITE_KEY, theme: 'auto',
+      callback: (t: string) => setTsToken(t),
+      'expired-callback': () => setTsToken(''),
+      'error-callback': () => setTsToken(''),
+    });
+  }
+  useEffect(() => { mountTs(); });
   const [user, setUser] = useState<'mc' | 'sc'>('mc');
   const [pwd, setPwd] = useState('');
   const [err, setErr] = useState('');
@@ -14,8 +31,8 @@ export default function Login() {
   useEffect(() => { fetch('/api/branding').then((r) => r.json()).then((j) => setLogo(j.login_logo_url)).catch(() => {}); }, []);
   async function go(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr('');
-    try { await api('/api/login', 'POST', { username: user, password: pwd }); router.push('/azioni'); router.refresh(); }
-    catch (x: any) { setErr(x.message); setBusy(false); }
+    try { await api('/api/login', 'POST', { username: user, password: pwd, turnstile: tsToken }); router.push('/azioni'); router.refresh(); }
+    catch (x: any) { setErr(x.message); setBusy(false); setTsToken(''); (window as any).turnstile?.reset(tsId.current); }
   }
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '10px solid #E0301E', padding: 20 }}>
@@ -36,9 +53,11 @@ export default function Login() {
         </div>
         <div className="lab" style={{ marginBottom: 6 }}>Password</div>
         <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} autoFocus required />
+        {SITE_KEY && <div ref={tsRef} style={{ marginTop: 16, minHeight: 65 }} />}
         {err && <div className="err" style={{ marginTop: 10 }}>{err}</div>}
-        <button className="btn pri" disabled={busy} style={{ width: '100%', justifyContent: 'center', height: 42, marginTop: 20 }}>{busy ? 'Accesso…' : 'Entra'}</button>
+        <button className="btn pri" disabled={busy || (!!SITE_KEY && !tsToken)} style={{ width: '100%', justifyContent: 'center', height: 42, marginTop: 20 }}>{busy ? 'Accesso…' : 'Entra'}</button>
       </form>
+      {SITE_KEY && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onLoad={mountTs} />}
       <div style={{ position: 'fixed', top: 16, right: 16 }}><ThemeToggle /></div>
     </div>
   );
