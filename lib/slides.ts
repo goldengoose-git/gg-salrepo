@@ -56,22 +56,25 @@ export function layoutBars(
   _TLW = 1150,
   _cw = CHAR_W
 ): { bars: PBar[]; rows: number } {
-  // Come nel deck originale: se le attività hanno una riga assegnata (row) viene rispettata;
-  // altrimenti le barre si dispongono in automatico sulla prima riga libera. Etichetta sempre dentro la barra.
-  const curated = bars.some((b) => (b.row ?? 0) > 0);
-  const res: PBar[] = [];
-  if (curated) {
-    for (const b of bars) res.push({ label: b.label, status: b.status, start: b.start_m, end: b.end_m, row: Math.max(0, Math.floor(b.row ?? 0)), out: 'in' });
-  } else {
-    const ends: number[] = [];
-    for (const b of [...bars].sort((x, y) => x.start_m - y.start_m || x.end_m - y.end_m)) {
-      let r = ends.findIndex((e) => e + 0.04 <= b.start_m);
-      if (r < 0) { r = ends.length; ends.push(0); }
-      ends[r] = b.end_m;
-      res.push({ label: b.label, status: b.status, start: b.start_m, end: b.end_m, row: r, out: 'in' });
-    }
+  // La riga salvata (row) viene rispettata, come nel deck originale. Se due barre si sovrappongono
+  // sulla stessa riga (dati vecchi o attività create senza riga), quella più corta scende alla prima riga libera.
+  // L'ordine del risultato coincide con quello dell'input.
+  const GAP = 0.04;
+  const order = bars.map((b, i) => ({ b, i, r0: Math.max(0, Math.floor(b.row ?? 0)) }))
+    .sort((x, y) => x.r0 - y.r0 || (y.b.end_m - y.b.start_m) - (x.b.end_m - x.b.start_m) || x.b.start_m - y.b.start_m);
+  const occ: { s: number; e: number }[][] = [];
+  const res: PBar[] = new Array(bars.length);
+  for (const { b, i, r0 } of order) {
+    let r = r0;
+    while ((occ[r] ?? []).some((o) => b.start_m < o.e + GAP && o.s < b.end_m + GAP)) r++;
+    (occ[r] ??= []).push({ s: b.start_m, e: b.end_m });
+    res[i] = { label: b.label, status: b.status, start: b.start_m, end: b.end_m, row: r, out: 'in' };
   }
-  return { bars: res, rows: Math.max(1, ...res.map((x) => x.row + 1)) };
+  // compatta le righe vuote
+  const used = [...new Set(res.map((x) => x.row))].sort((a, c) => a - c);
+  const map = new Map(used.map((r, k) => [r, k]));
+  res.forEach((x) => { x.row = map.get(x.row) ?? 0; });
+  return { bars: res, rows: Math.max(1, used.length) };
 }
 export const PIPE = { top: 145, bottom: 676, laneGap: 8, minPitch: 12, maxPitch: 20 };
 export const pipePitch = (rows: number, lanes: number) =>
