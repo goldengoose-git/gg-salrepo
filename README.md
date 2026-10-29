@@ -8,6 +8,7 @@ Versione online del tool locale `Golden_Goose_SAL_deck`. Next.js 15 su Vercel, d
 - **Archivio**: stato Completed (o `(done)` nei ticket) = la voce passa in archivio, ripristinabile.
 - **Export**: PDF (stampa del browser), PPTX (tabelle native), XLSX (archivio e ticket), JSON.
 - **Import JSON**: deck del tool locale e export di questa app.
+- **Import CSV Jira**: Ticket AMS → Importa CSV Jira (utente SC), export CSV con Issue key e Summary; unisce per codice senza cancellare i ticket esistenti. Stati Done/Closed/Resolved vanno in Archivio.
 - **Settimane**: "Pubblica" salva una copia nello storico, "Nuova settimana" duplica righe attive e timeline.
 
 ## Messa online
