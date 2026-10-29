@@ -1,20 +1,22 @@
 import { q } from '@/lib/db';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
+import { addDays, formatSalDate, isIso, weekLabel } from '@/lib/dates';
 
 // Nuova settimana: copia impostazioni, righe attive (non in archivio) e timeline.
 export async function POST(req: Request) {
   const me = await needUser();
   if (isErr(me)) return me;
   const b = await req.json().catch(() => ({}));
-  const label = String(b.week_label ?? '').trim();
-  const date = String(b.date_label ?? '').trim();
-  if (!label) return fail('Indica il nome della settimana');
   const cur = await currentDeck();
+  // data SAL della nuova settimana (default: una settimana dopo); Week e data in cover derivano da qui
+  const salDate = isIso(b.sal_date) ? b.sal_date : addDays(cur.sal_date && isIso(cur.sal_date) ? cur.sal_date : new Date().toISOString().slice(0, 10), 7);
+  const label = weekLabel(salDate);
+  const date = formatSalDate(salDate);
   const nd = await q<{ id: string }>(
-    `insert into decks (week_label, client, subtitle, date_label, year, logo_left_url, logo_right_url, bg_cover_url, bg_divider_url, bg_table_url, overlay)
-     select $1, client, subtitle, $2, year, logo_left_url, logo_right_url, bg_cover_url, bg_divider_url, bg_table_url, overlay from decks where id = $3 returning id`,
-    [label, date || cur.date_label, cur.id]
+    `insert into decks (week_label, client, subtitle, date_label, year, sal_date, logo_left_url, logo_right_url, bg_cover_url, bg_divider_url, bg_table_url, overlay)
+     select $1, client, subtitle, $2, $4, $5, logo_left_url, logo_right_url, bg_cover_url, bg_divider_url, bg_table_url, overlay from decks where id = $3 returning id`,
+    [label, date, cur.id, +salDate.slice(0, 4), salDate]
   );
   const id = nd[0].id;
   await q(

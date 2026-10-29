@@ -63,12 +63,22 @@ for (const u of users) {
   console.log(`Utente ${u.username} (${u.role}) OK`);
 }
 
+// date SAL: calcola Week e data dai deck esistenti senza sal_date
+const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+function parseLabel(l) { const m = String(l ?? '').match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})/); if (!m) return null; const i = MONTHS.findIndex((x) => x.startsWith(m[2].toLowerCase().slice(0, 3))); return i < 0 ? null : `${m[3]}-${String(i + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+function isoWeek(iso) { const [y, mo, d] = iso.split('-').map(Number); const t = new Date(Date.UTC(y, mo - 1, d)); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = Date.UTC(t.getUTCFullYear(), 0, 1); return Math.ceil(((t - y0) / 86400000 + 1) / 7); }
+for (const dk of await sql.query('select id, date_label, created_at from decks where sal_date is null')) {
+  const iso = parseLabel(dk.date_label) ?? new Date(dk.created_at).toISOString().slice(0, 10);
+  await sql.query('update decks set sal_date = $1, week_label = $2 where id = $3', [iso, `Week ${isoWeek(iso)}`, dk.id]);
+  console.log(`Deck ${dk.id.slice(0, 8)}: data ${iso}, Week ${isoWeek(iso)}`);
+}
+
 const [{ n }] = await sql.query('select count(*)::int as n from decks');
 if (n === 0) {
   const d = new Date();
   await sql.query(
-    `insert into decks (week_label, date_label, year) values ($1,$2,$3)`,
-    ['Week 1', d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), d.getFullYear()]
+    `insert into decks (week_label, date_label, year, sal_date) values ($1,$2,$3,$4)`,
+    [`Week ${isoWeek(d.toISOString().slice(0, 10))}`, d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), d.getFullYear(), d.toISOString().slice(0, 10)]
   );
   console.log('Primo deck creato');
 }

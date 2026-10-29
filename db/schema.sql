@@ -101,3 +101,13 @@ create table if not exists lookups (
 alter table lookups drop constraint if exists lookups_kind_check
 ;
 alter table lookups add constraint lookups_kind_check check (kind in ('type_mc','type_sc','owner','contract_label'))
+;
+alter table decks add column if not exists sal_date text
+;
+create table if not exists team_status (
+  deck_id uuid not null references decks(id) on delete cascade,
+  team text not null check (team in ('MC','SC')),
+  done_at timestamptz not null default now(),
+  done_by text,
+  primary key (deck_id, team)
+);

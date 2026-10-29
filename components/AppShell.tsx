@@ -6,6 +6,7 @@ import { api } from '@/lib/client';
 import type { AppState, Me } from '@/lib/types';
 import { Ic } from './icons';
 import ThemeToggle from './ThemeToggle';
+import TeamStrip from './TeamStrip';
 
 type Ctx = { me: Me; state: AppState | null; reload: () => Promise<void>; toast: (m: string) => void };
 const C = createContext<Ctx>(null as any);
@@ -30,6 +31,13 @@ export default function AppShell({ me, children }: { me: Me; children: React.Rea
     try { setState((await api<{ state: AppState }>('/api/state')).state); } catch (e: any) { setMsg(e.message); }
   }, []);
   useEffect(() => { reload(); }, [reload]);
+  // aggiorna ogni minuto (e al ritorno sulla scheda) per vedere subito l'editing completato dall'altro team
+  useEffect(() => {
+    const t = setInterval(() => { if (document.visibilityState === 'visible') reload(); }, 60000);
+    const v = () => { if (document.visibilityState === 'visible') reload(); };
+    document.addEventListener('visibilitychange', v);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', v); };
+  }, [reload]);
   const toast = useCallback((m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3500); }, []);
 
   return (
@@ -47,7 +55,7 @@ export default function AppShell({ me, children }: { me: Me; children: React.Rea
             <button onClick={async () => { await api('/api/logout', 'POST'); router.push('/login'); router.refresh(); }}>Esci</button>
           </div>
         </aside>
-        <div className="main">{state ? children : <div className="body muted">Caricamento…</div>}</div>
+        <div className="main">{state ? <>{(path.startsWith('/azioni') || path.startsWith('/ticket')) && <TeamStrip />}{children}</> : <div className="body muted">Caricamento…</div>}</div>
       </div>
       {msg && <div className="toast">{msg}</div>}
     </C.Provider>

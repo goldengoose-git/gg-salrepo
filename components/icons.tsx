@@ -13,6 +13,7 @@ const P: Record<string, string> = {
   up: 'M12 19V5M6 11l6-6 6 6',
   down: 'M12 5v14M6 13l6 6 6-6',
   cp: 'M8 8h12v12H8zM4 16V4h12',
+  tr: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   undo: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
 };
 export function Ic({ n }: { n: keyof typeof P | string }) {

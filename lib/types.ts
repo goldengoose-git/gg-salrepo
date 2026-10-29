@@ -1,7 +1,7 @@
 import type { Area, BarStatus, Lane, Status } from './constants';
 
 export type Deck = {
-  id: string; week_label: string; client: string; subtitle: string; date_label: string; year: number;
+  id: string; week_label: string; sal_date: string | null; client: string; subtitle: string; date_label: string; year: number;
   logo_left_url: string | null; logo_right_url: string | null;
   bg_cover_url: string | null; bg_divider_url: string | null; bg_table_url: string | null;
   overlay: number; status: string; published_at: string | null; created_at: string;
@@ -16,5 +16,6 @@ export type Bar = {
 };
 export type SnapshotRow = { id: string; week_label: string; created_by: string | null; created_at: string };
 export type Lookup = { id: string; kind: 'type_mc' | 'type_sc' | 'owner' | 'contract_label'; value: string; position: number };
-export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[] };
+export type TeamStatus = { team: 'MC' | 'SC'; done_at: string; done_by: string | null };
+export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[]; teamStatus: TeamStatus[] };
 export type Me = { username: string; role: 'MC' | 'SC'; name: string };

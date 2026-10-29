@@ -9,10 +9,11 @@ import { Prio } from '@/lib/prio';
 
 export default function Archivio() {
   const { me, state, reload, toast } = useApp();
-  const [f, setF] = useState<'' | 'MC' | 'SC' | 'AMS'>('');
+  const own = me.role === 'MC' ? (['MC', 'SC', 'AMS'] as const) : (['SC', 'AMS', 'MC'] as const); // prima i sistemi del proprio team
+  const [f, setF] = useState<'MC' | 'SC' | 'AMS'>(own[0]);
   const [q, setQ] = useState('');
   const all = state!.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
-  const rows = all.filter((i) => (!f || i.area === f) && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
+  const rows = all.filter((i) => i.area === f && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
   return (
     <>
       <div className="top"><h2>Archivio · Completed Activities</h2><span className="sp" />
@@ -20,7 +21,7 @@ export default function Archivio() {
       <div className="body">
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>
           <div style={{ width: 260 }}><input placeholder="Cerca nell'archivio" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-          {(['', 'MC', 'SC', 'AMS'] as const).map((a) => <button key={a} className={'chip' + (f === a ? ' on' : '')} onClick={() => setF(a)}>{a || 'Tutti'} {a ? all.filter((i) => i.area === a).length : all.length}</button>)}
+          {own.map((a) => <button key={a} className={'chip' + (f === a ? ' on' : '')} onClick={() => setF(a)}>{a === 'MC' ? 'Marketing Cloud' : a === 'SC' ? 'Service Cloud' : 'Ticket AMS'}{areasFor(me.role).includes(a) ? ' (tuo)' : ''} {all.filter((i) => i.area === a).length}</button>)}
         </div>
         <div className="card" style={{ overflow: 'auto' }}>
           <table className="t">
