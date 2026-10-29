@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/components/AppShell';
 import { Thumb } from '@/components/SlideView';
 import { Ic } from '@/components/icons';
-import { api } from '@/lib/client';
+import { api, uploadImage } from '@/lib/client';
 
 type K = 'logo_left_url' | 'logo_right_url' | 'bg_cover_url' | 'bg_divider_url' | 'bg_table_url';
 const SLOTS: { k: K; t: string; h: string; logo?: boolean }[] = [
@@ -23,11 +23,7 @@ function Slot({ k, t, h, logo }: (typeof SLOTS)[number]) {
     if (!file) return;
     setBusy(true);
     try {
-      const fd = new FormData(); fd.append('file', file);
-      const r = await fetch('/api/upload', { method: 'POST', body: fd });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error);
-      await api('/api/deck', 'PATCH', { [k]: j.url }); await reload(); toast('Caricato');
+      await api('/api/deck', 'PATCH', { [k]: await uploadImage(file) }); await reload(); toast('Caricato');
     } catch (e: any) { toast(e.message); }
     setBusy(false);
   }
@@ -59,11 +55,7 @@ function LoginLogo() {
     if (!file) return;
     setBusy(true);
     try {
-      const fd = new FormData(); fd.append('file', file);
-      const r = await fetch('/api/upload', { method: 'POST', body: fd });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error);
-      await save(j.url); toast('Logo login aggiornato');
+      await save(await uploadImage(file)); toast('Logo login aggiornato');
     } catch (e: any) { toast(e.message); }
     setBusy(false);
   }

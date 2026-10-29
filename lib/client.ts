@@ -16,3 +16,14 @@ export async function download(path: string, fallback: string) {
   a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
+// carica un'immagine e restituisce l'URL; errori sempre leggibili
+export async function uploadImage(file: File): Promise<string> {
+  if (file.size > 4 * 1024 * 1024) throw new Error('File troppo grande (max 4 MB)');
+  const fd = new FormData(); fd.append('file', file);
+  const r = await fetch('/api/upload', { method: 'POST', body: fd });
+  const txt = await r.text();
+  let j: any = {};
+  try { j = JSON.parse(txt); } catch {}
+  if (!r.ok || !j.url) throw new Error(j.error || (r.status === 413 ? 'File troppo grande' : `Upload fallito (${r.status}). Controlla il token Blob su Vercel e fai Redeploy`));
+  return j.url;
+}
