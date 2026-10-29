@@ -84,7 +84,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
   ]);
   const slides = buildSlides(st, includeArchive);
 
-  const dark = (s: PptxGenJS.Slide, bg: string | null) => {
+  const dark = (s: PptxGenJS.Slide, bg: ImageData | null) => {
     s.background = { color: '15171B' };
     if (bg) {
       s.addImage({ data: bg.data, x: 0, y: 0, w: 13.333, h: 7.5 });
