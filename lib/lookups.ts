@@ -1,8 +1,9 @@
-export type LookupKind = 'type_mc' | 'type_sc' | 'owner';
+export type LookupKind = 'type_mc' | 'type_sc' | 'owner' | 'contract_label';
 export const KINDS: { kind: LookupKind; title: string; hint: string }[] = [
   { kind: 'type_mc', title: 'Type · Marketing Cloud', hint: 'Valori del campo Type delle azioni MC (es. CJ, Campaign, Set Up)' },
   { kind: 'type_sc', title: 'Type · Service Cloud', hint: 'Valori del campo Type delle azioni SC' },
   { kind: 'owner', title: 'Owner', hint: 'Persone con prefisso team, es. CRM: Saladino, IT: Glave' },
+  { kind: 'contract_label', title: 'Contract · stato offerta', hint: 'Etichette da abbinare a OPEX o CAPEX, es. Offerta da emettere, Offerta firmata' },
 ];
 
 // "CRM: Saladino, Barile / IT: Glave" -> ["CRM: Saladino","CRM: Barile","IT: Glave"]
@@ -42,3 +43,15 @@ export const contractKind = (s: string): 'opex' | 'capex' | null => {
   const t = String(s ?? '').trim().toLowerCase();
   return t === 'opex' ? 'opex' : t === 'capex' ? 'capex' : null;
 };
+
+// Contract = [OPEX|CAPEX] [– etichetta]: "CAPEX – Offerta da emettere", "Offerta firmata", "OPEX"
+export function parseContract(s: string): { type: '' | 'OPEX' | 'CAPEX'; label: string } {
+  const t = String(s ?? '').trim();
+  const m = t.match(/^(opex|capex)\s*(?:[–—-]\s*(.*))?$/i);
+  if (m) return { type: m[1].toUpperCase() as 'OPEX' | 'CAPEX', label: (m[2] ?? '').trim() };
+  return { type: '', label: t };
+}
+export function joinContract(type: string, label: string): string {
+  const l = label.trim();
+  return type && l ? `${type} – ${l}` : type || l;
+}

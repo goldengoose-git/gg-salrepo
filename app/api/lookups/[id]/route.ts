@@ -1,7 +1,7 @@
 import { q } from '@/lib/db';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { canManage } from '@/lib/lookups-server';
-import { joinOwners, parseOwners } from '@/lib/lookups';
+import { joinContract, joinOwners, parseContract, parseOwners } from '@/lib/lookups';
 import { currentDeck } from '@/lib/state';
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +33,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const deck = await currentDeck();
   let updated = 0;
-  if (kind === 'owner') {
+  if (kind === 'contract_label') {
+    const rows = await q<{ id: string; contract: string }>(`select id, contract from items where deck_id = $1 and area <> 'AMS' and contract <> ''`, [deck.id]);
+    for (const it of rows) {
+      const c = parseContract(it.contract);
+      if (c.label !== old) continue;
+      await q('update items set contract = $1, updated_by = $2, updated_at = now() where id = $3', [joinContract(c.type, nv), me.username, it.id]);
+      updated++;
+    }
+  } else if (kind === 'owner') {
     const rows = await q<{ id: string; owner: string }>(`select id, owner from items where deck_id = $1 and area <> 'AMS' and owner <> ''`, [deck.id]);
     for (const it of rows) {
       const list = parseOwners(it.owner);

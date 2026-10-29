@@ -8,12 +8,16 @@ import { Ic } from './icons';
 import ItemModal from './ItemModal';
 import { StatusPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
-import { contractKind, fmtEstimate } from '@/lib/lookups';
+import { fmtEstimate, parseContract } from '@/lib/lookups';
 
 export function ContractPill({ v }: { v: string }) {
-  const k = contractKind(v);
-  if (!k) return <>{v}</>;
-  return <span className={'pill cx-' + k}>{k.toUpperCase()}</span>;
+  const c = parseContract(v);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      {c.type && <span className={'pill cx-' + c.type.toLowerCase()}>{c.type}</span>}
+      {c.label && <span>{c.label}</span>}
+    </span>
+  );
 }
 
 export default function ItemTable({ area, prefix, label }: { area: Area; prefix: string; label: string }) {

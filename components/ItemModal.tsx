@@ -7,7 +7,7 @@ import { useApp } from './AppShell';
 import Modal from './Modal';
 import { StatusPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
-import { contractKind, joinOwners, normEstimate, parseOwners } from '@/lib/lookups';
+import { joinContract, joinOwners, normEstimate, parseContract, parseOwners } from '@/lib/lookups';
 
 const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status };
 
@@ -27,7 +27,13 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
   const ownerOpts = [...ownerList, ...picked.filter((o) => !ownerList.includes(o))];
   const toggleOwner = (o: string) => setF({ ...f, owner: joinOwners(picked.includes(o) ? picked.filter((x) => x !== o) : [...picked, o]) });
   const est = normEstimate(f.estimate);
-  const ck = contractKind(f.contract);
+  const cc = parseContract(f.contract);
+  const labelList = (state?.lookups ?? []).filter((l) => l.kind === 'contract_label').map((l) => l.value);
+  const [custom, setCustom] = useState(() => !!parseContract(item?.contract ?? '').label && !labelList.includes(parseContract(item?.contract ?? '').label));
+  const setContract = (type: string, label: string) => setF({ ...f, contract: joinContract(type, label) });
+  async function addLabel() {
+    try { await api('/api/lookups', 'POST', { kind: 'contract_label', value: cc.label }); await reload(); setCustom(false); toast('Etichetta aggiunta all\'elenco'); } catch (e: any) { toast(e.message); }
+  }
 
   async function save() {
     if (!f.description.trim()) { setErr(ams ? 'Inserisci il subject' : 'Inserisci la descrizione'); return; }
@@ -82,10 +88,25 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           <input type="number" min={0} step={0.5} disabled={est === '-' && f.estimate === '-'} value={est === '-' ? '' : est} placeholder="0" onChange={(e) => setF({ ...f, estimate: e.target.value })} /><b>MD</b>
           <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={f.estimate === '-'} onChange={(e) => setF({ ...f, estimate: e.target.checked ? '-' : '' })} />Nessuna (-)</label>
         </div>)}
-        {L('Contract type e status', <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input value={f.contract} onChange={set('contract')} />
-          {(['opex', 'capex'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k + (ck === k ? ' sel' : '')} style={{ border: 0, flex: 'none' }} onClick={() => setF({ ...f, contract: ck === k ? '' : k.toUpperCase() })}>{k.toUpperCase()}</button>)}
-        </div>, 2)}
+        <div className="f" style={{ gridColumn: 'span 2' }}>
+          <label className="lab">Contract type e status</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {(['OPEX', 'CAPEX'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k.toLowerCase() + (cc.type === k ? ' sel' : '')} style={{ border: 0, flex: 'none', height: 32, padding: '0 14px' }} onClick={() => setContract(cc.type === k ? '' : k, cc.label)}>{k}</button>)}
+            <select style={{ flex: 1, minWidth: 180 }} value={custom ? '__custom' : cc.label} onChange={(e) => {
+              if (e.target.value === '__custom') { setCustom(true); return; }
+              setCustom(false); setContract(cc.type, e.target.value);
+            }}>
+              <option value="">- nessuna etichetta -</option>
+              {labelList.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="__custom">Personalizzata…</option>
+            </select>
+          </div>
+          {custom && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input autoFocus value={cc.label} placeholder="Etichetta personalizzata" onChange={(e) => setContract(cc.type, e.target.value)} />
+            <button type="button" className="btn" style={{ flex: 'none' }} disabled={!cc.label.trim() || labelList.includes(cc.label.trim())} onClick={addLabel}>Salva in elenco</button>
+          </div>}
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 6 }}>Nella slide: <b>{f.contract || '-'}</b></div>
+        </div>
         {L(ams ? 'Stato ticket in slide' : 'Activity status (testo in slide)', <input value={f.activity} onChange={set('activity')} placeholder={ams ? 'new, in progress, in attesa di feedback da GG…' : 'Ongoing, To Do, Done…'} />)}
         <div className="f" style={{ gridColumn: 'span 3' }}>
           <label className="lab">Activity status</label>

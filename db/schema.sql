@@ -97,3 +97,7 @@ create table if not exists lookups (
   position int not null default 0,
   unique (kind, value)
 );
+;
+alter table lookups drop constraint if exists lookups_kind_check
+;
+alter table lookups add constraint lookups_kind_check check (kind in ('type_mc','type_sc','owner','contract_label'))

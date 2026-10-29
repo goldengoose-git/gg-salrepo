@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   const kind = String(b.kind ?? '');
   const value = String(b.value ?? '').trim().slice(0, 80);
-  if (!['type_mc', 'type_sc', 'owner'].includes(kind)) return fail('Elenco non valido');
+  if (!['type_mc', 'type_sc', 'owner', 'contract_label'].includes(kind)) return fail('Elenco non valido');
   if (!value) return fail('Inserisci un valore');
   if (!canManage(me.role, kind)) return fail('Non puoi modificare questo elenco', 403);
   const pos = await q<{ m: number }>('select coalesce(max(position),0)::int + 1 as m from lookups where kind=$1', [kind]);
