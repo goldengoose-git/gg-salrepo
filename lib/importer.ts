@@ -1,10 +1,11 @@
 import { q } from './db';
 import { normEstimate } from './lookups';
-import { DONE_RE, LANES, STATUS_KEYS, areasFor, lanesFor, type Area, type BarStatus, type Lane, type Role, type Status } from './constants';
+import { AMS_KEYS, AMS_STATUS, DONE_RE, LANES, STATUS_KEYS, areasFor, jiraStatus, lanesFor, type AmsStatus, type Area, type BarStatus, type Lane, type Role, type Status } from './constants';
 
 export type ImpItem = Partial<{
   area: Area; code: string; type: string; description: string; priority: string; requested_date: string; golive_date: string;
   owner: string; estimate: string; contract: string; activity: string; status: Status; archived: boolean;
+  release_date: string; ams_status: AmsStatus; closed_at: string;
 }> & { area: Area };
 export type ImpBar = { lane: Lane; label: string; status: BarStatus; start_m: number; end_m: number; row: number };
 export type Parsed = { deck: Partial<{ client: string; subtitle: string; date_label: string; year: number }>; items: ImpItem[]; bars: ImpBar[] };
@@ -79,6 +80,7 @@ export function parseAny(j: any): Parsed {
           const done = DONE_RE.test(raw) || status === 'completed';
           out.items.push({
             area: 'AMS', code, description: strip(text), status: done ? 'completed' : status, archived: done,
+            ams_status: done ? 'done' : (jiraStatus(tag) ?? (status === 'ontrack' ? 'wip' : 'waiting')),
             owner: cell(iOwn), contract: cell(iCon), priority: cell(iPri), activity: tag,
           });
         }
@@ -95,39 +97,67 @@ export function parseAny(j: any): Parsed {
   return out;
 }
 
-export type ImportOpts = { deckId: string; role: Role; scope: 'all' | 'mine' | 'timeline'; mode: 'merge' | 'replace'; user: string };
+export type ImportOpts = { deckId: string; role: Role; scope: 'all' | 'mine' | 'timeline'; mode: 'merge' | 'replace'; user: string; skipNewDone?: boolean };
 
 export async function applyImport(p: Parsed, o: ImportOpts) {
   const areas = areasFor(o.role);
   const lanes = lanesFor(o.role);
-  let nItems = 0, nBars = 0;
+  let nItems = 0, nBars = 0, nUpdated = 0;
 
   if (o.scope !== 'timeline') {
     let items = p.items.filter((i) => areas.includes(i.area));
+    // ticket AMS: lo stato Jira decide archivio e colore; un ticket Done va in archivio
+    items = items.map((i) => {
+      if (i.area !== 'AMS') return i;
+      const am: AmsStatus = i.ams_status && AMS_KEYS.includes(i.ams_status) ? i.ams_status : (i.archived || i.status === 'completed' ? 'done' : 'wip');
+      return { ...i, ams_status: am, status: AMS_STATUS[am].status, archived: am === 'done' };
+    });
+    const toRow = (i: ImpItem, position: number) => ({
+      area: i.area, position, code: i.code ?? '', type: i.type ?? '', description: i.description ?? '',
+      priority: i.priority ?? '', requested_date: i.requested_date ?? '', golive_date: i.golive_date ?? '', release_date: i.release_date ?? '', owner: i.owner ?? '',
+      estimate: normEstimate(i.estimate), contract: i.contract ?? '', activity: i.activity ?? '', ams_status: i.area === 'AMS' ? (i.ams_status ?? null) : null,
+      status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
+      archived: !!i.archived || i.status === 'completed', closed_at: i.closed_at || null,
+    });
     if (o.mode === 'merge') {
-      const ex = await q<any>('select area, code, description from items where deck_id = $1', [o.deckId]);
+      const ex = await q<any>('select id, area, code, description from items where deck_id = $1', [o.deckId]);
       const key = (a: string, c: string, d: string) => `${a}|${c ?? ''}|${d ?? ''}`;
       const have = new Set(ex.map((e: any) => key(e.area, e.code, e.description)));
-      items = items.filter((i) => !have.has(key(i.area, i.code ?? '', i.description ?? '')));
+      // ticket AMS già presenti (stesso codice): si aggiornano stato, titolo, priorità, owner e data, invece di duplicarli
+      const byCode = new Map<string, string>(ex.filter((e: any) => e.area === 'AMS' && e.code).map((e: any) => [e.code, e.id]));
+      const upd = items.filter((i) => i.area === 'AMS' && i.code && byCode.has(i.code));
+      if (upd.length) {
+        const rows = upd.map((i) => ({ ...toRow(i, 0), id: byCode.get(i.code!) }));
+        await q(
+          `update items t set description = x.description, priority = x.priority, owner = x.owner,
+                  requested_date = case when x.requested_date <> '' then x.requested_date else t.requested_date end,
+                  ams_status = x.ams_status, status = x.status,
+                  archived_at = case when x.archived then coalesce(t.archived_at, x.closed_at::timestamptz, now()) end,
+                  closed_at = case when x.archived then coalesce(t.closed_at, x.closed_at::timestamptz, now()) end,
+                  updated_by = $2, updated_at = now()
+           from jsonb_to_recordset($1::jsonb) as x(id uuid, description text, priority text, owner text, requested_date text, ams_status text, status text, archived boolean, closed_at text)
+           where t.id = x.id`,
+          [JSON.stringify(rows), o.user]
+        );
+        nUpdated = upd.length;
+      }
+      const updSet = new Set(upd);
+      items = items.filter((i) => !updSet.has(i) && !have.has(key(i.area, i.code ?? '', i.description ?? '')));
     }
+    if (o.skipNewDone) items = items.filter((i) => !(i.area === 'AMS' && i.ams_status === 'done'));
     if (o.mode === 'replace') await q('delete from items where deck_id = $1 and area = any($2)', [o.deckId, areas]);
     const base: Record<string, number> = {};
     for (const a of areas) {
       const r = await q<{ m: number }>('select coalesce(max(position),0)::int as m from items where deck_id=$1 and area=$2', [o.deckId, a]);
       base[a] = r[0].m;
     }
-    const rows = items.map((i) => ({
-      area: i.area, position: ++base[i.area], code: i.code ?? '', type: i.type ?? '', description: i.description ?? '',
-      priority: i.priority ?? '', requested_date: i.requested_date ?? '', golive_date: i.golive_date ?? '', owner: i.owner ?? '',
-      estimate: normEstimate(i.estimate), contract: i.contract ?? '', activity: i.activity ?? '', status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
-      archived: !!i.archived || i.status === 'completed',
-    }));
+    const rows = items.map((i) => toRow(i, ++base[i.area]));
     if (rows.length) {
       await q(
-        `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, updated_by)
-         select $1::uuid, x.area, x.position, x.code, x.type, x.description, x.priority, x.requested_date, x.golive_date, x.owner, x.estimate, x.contract, x.activity, x.status,
-                case when x.archived then now() end, case when x.archived then now() end, $3
-         from jsonb_to_recordset($2::jsonb) as x(area text, position int, code text, type text, description text, priority text, requested_date text, golive_date text, owner text, estimate text, contract text, activity text, status text, archived boolean)`,
+        `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, updated_by)
+         select $1::uuid, x.area, x.position, x.code, x.type, x.description, x.priority, x.requested_date, x.golive_date, x.release_date, x.owner, x.estimate, x.contract, x.activity, x.status, x.ams_status,
+                case when x.archived then coalesce(x.closed_at::timestamptz, now()) end, case when x.archived then coalesce(x.closed_at::timestamptz, now()) end, $3
+         from jsonb_to_recordset($2::jsonb) as x(area text, position int, code text, type text, description text, priority text, requested_date text, golive_date text, release_date text, owner text, estimate text, contract text, activity text, status text, ams_status text, archived boolean, closed_at text)`,
         [o.deckId, JSON.stringify(rows), o.user]
       );
     }
@@ -154,5 +184,5 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
     }
     nBars = bars.length;
   }
-  return { items: nItems, bars: nBars };
+  return { items: nItems, bars: nBars, updated: nUpdated };
 }

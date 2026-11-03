@@ -1,21 +1,22 @@
 'use client';
 import { useState } from 'react';
-import { PRIORITIES, STATUS, STATUS_KEYS, type Area, type Status } from '@/lib/constants';
+import { AMS_KEYS, AMS_STATUS, PRIORITIES, STATUS, STATUS_KEYS, type AmsStatus, type Area, type Status } from '@/lib/constants';
 import { api } from '@/lib/client';
 import type { Item } from '@/lib/types';
 import { useApp } from './AppShell';
 import Modal from './Modal';
-import { StatusPill } from './StatusPill';
+import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
 import { joinContract, joinOwners, normEstimate, parseContract, parseOwners } from '@/lib/lookups';
 
-const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status };
+const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', release_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status, ams_status: 'new' as AmsStatus };
 
 export default function ItemModal({ area, item, label, onClose }: { area: Area; item?: Item; label: string; onClose: () => void }) {
   const { reload, toast, state } = useApp();
   const [f, setF] = useState({ ...EMPTY, ...(item ? {
     activity: item.activity, code: item.code, type: item.type, description: item.description, priority: item.priority, requested_date: item.requested_date,
-    golive_date: item.golive_date, owner: item.owner, estimate: item.estimate, contract: item.contract, status: item.status } : {}) });
+    golive_date: item.golive_date, release_date: item.release_date ?? '', owner: item.owner, estimate: item.estimate, contract: item.contract, status: item.status,
+    ams_status: item.ams_status ?? (item.status === 'completed' ? 'done' : 'wip') } : {}) });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<any>) => setF({ ...f, [k]: e.target.value });
@@ -42,7 +43,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
     try {
       if (item) await api(`/api/items/${item.id}`, 'PATCH', f);
       else await api('/api/items', 'POST', { area, ...f });
-      await reload(); toast(f.status === 'completed' ? 'Salvato e archiviato' : 'Salvato'); onClose();
+      await reload(); toast((ams ? f.ams_status === 'done' : f.status === 'completed') ? 'Salvato e archiviato' : 'Salvato'); onClose();
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
   async function del() {
@@ -54,7 +55,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
     <div className="f" style={{ gridColumn: `span ${span}` }}><label className="lab">{t}</label>{c}</div>
   );
   return (
-    <Modal title={<>{item ? 'Modifica' : 'Nuova'} {label} {item && <span style={{ marginLeft: 8 }}><StatusPill s={item.status} /></span>}</>} onClose={onClose}
+    <Modal title={<>{item ? 'Modifica' : 'Nuova'} {label} {item && <span style={{ marginLeft: 8 }}><ItemPill i={item} /></span>}</>} onClose={onClose}
       footer={<>
         {item && <button className="btn danger" onClick={del} disabled={busy}>Elimina</button>}
         <span className="sp" />{err && <span className="err">{err}</span>}
@@ -84,6 +85,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
         </div>
         {L(ams ? 'Opened' : 'Requested date', <input value={f.requested_date} onChange={set('requested_date')} placeholder="gg/mm" />)}
         {!ams && L('GoLive date', <input value={f.golive_date} onChange={set('golive_date')} placeholder="gg/mm" />)}
+        {!ams && L('Data di rilascio', <input value={f.release_date} onChange={set('release_date')} placeholder="gg/mm" />)}
         {!ams && L('Stima', <div className="est">
           <input type="number" min={0} step={0.5} disabled={est === '-' && f.estimate === '-'} value={est === '-' ? '' : est} placeholder="0" onChange={(e) => setF({ ...f, estimate: e.target.value })} /><b>MD</b>
           <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={f.estimate === '-'} onChange={(e) => setF({ ...f, estimate: e.target.checked ? '-' : '' })} />Nessuna (-)</label>
@@ -107,8 +109,20 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           </div>}
           <div className="muted" style={{ fontSize: 12.5, marginTop: 6 }}>Nella slide: <b>{f.contract || '-'}</b></div>
         </div>
-        {L(ams ? 'Stato ticket in slide' : 'Activity status (testo in slide)', <input value={f.activity} onChange={set('activity')} placeholder={ams ? 'new, in progress, in attesa di feedback da GG…' : 'Ongoing, To Do, Done…'} />)}
-        <div className="f" style={{ gridColumn: 'span 3' }}>
+        {!ams && L('Activity status (testo in slide)', <input value={f.activity} onChange={set('activity')} placeholder="Ongoing, To Do, Done…" />)}
+        {ams && <div className="f" style={{ gridColumn: 'span 3' }}>
+          <label className="lab">Stato ticket (come Jira)</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {AMS_KEYS.map((s) => (
+              <button type="button" key={s} onClick={() => setF({ ...f, ams_status: s, status: AMS_STATUS[s].status })} className="pill"
+                style={{ background: AMS_STATUS[s].color, color: AMS_STATUS[s].text, border: f.ams_status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.ams_status === s ? 1 : 0.55 }}>
+                {AMS_STATUS[s].label}
+              </button>
+            ))}
+          </div>
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Con Done il ticket passa in Archivio (ripristinabile). Nella slide compare lo stato scelto.</div>
+        </div>}
+        {!ams && <div className="f" style={{ gridColumn: 'span 3' }}>
           <label className="lab">Activity status</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {STATUS_KEYS.map((s) => (
@@ -119,7 +133,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
             ))}
           </div>
           <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Con Completed la voce passa in Archivio (ripristinabile).</div>
-        </div>
+        </div>}
       </div>
     </Modal>
   );

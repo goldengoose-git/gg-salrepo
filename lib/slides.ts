@@ -1,5 +1,5 @@
 import { fmtEstimate } from './lookups';
-import { COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
+import { AMS_STATUS, COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
 import type { AppState, Item } from './types';
 
 export type SRow = { cells: string[]; status?: Status; completed?: boolean; ams?: { t: string; tag: string }[] };
@@ -89,8 +89,8 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   const cellsOf = (theme: 'mc' | 'sc', it: Item, n: string) => {
     const act = it.activity || sLabel(it.status);
     return theme === 'mc'
-      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
-      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
+      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
+      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
   };
   const tableSlides = (theme: 'mc' | 'sc', title: string, items: Item[]) => {
     const cols = COLS[theme];
@@ -122,7 +122,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
         rows: [{
           status: worst,
           cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, sLabel(worst)],
-          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: i.activity || sLabel(i.status) })),
+          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status) })),
         }],
       });
     });

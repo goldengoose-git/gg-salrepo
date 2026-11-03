@@ -1,6 +1,6 @@
 import { fmtEstimate } from '@/lib/lookups';
 import ExcelJS from 'exceljs';
-import { STATUS } from '@/lib/constants';
+import { AMS_STATUS, STATUS } from '@/lib/constants';
 import { isErr, needUser } from '@/lib/http';
 import { getState } from '@/lib/state';
 
@@ -33,7 +33,7 @@ export async function GET() {
     { header: 'Archiviato', key: 'a', width: 11 },
   ];
   for (const i of st.items.filter((x) => x.area === 'AMS'))
-    ams.addRow({ c: i.code, d: i.description, p: i.priority, o: i.owner, r: i.requested_date, s: STATUS[i.status].label, a: i.archived_at ? 'sì' : '' });
+    ams.addRow({ c: i.code, d: i.description, p: i.priority, o: i.owner, r: i.requested_date, s: i.ams_status ? AMS_STATUS[i.ams_status].label : STATUS[i.status].label, a: i.archived_at ? 'sì' : '' });
   head(ams);
   const buf = await wb.xlsx.writeBuffer();
   return new Response(buf as ArrayBuffer, {

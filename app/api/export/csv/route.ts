@@ -9,7 +9,7 @@ export async function GET() {
   const st = await getState();
   const rows: any[][] = [[...CSV_COLS]];
   for (const i of st.items)
-    rows.push([i.area, i.code, i.type, i.description, i.priority, i.requested_date, i.golive_date, i.owner, i.estimate, i.contract, i.activity, i.status, i.archived_at ? 'sì' : '']);
+    rows.push([i.area, i.code, i.type, i.description, i.priority, i.requested_date, i.golive_date, i.release_date, i.owner, i.estimate, i.contract, i.activity, i.status, i.ams_status ?? '', i.archived_at ? 'sì' : '']);
   return new Response(toCsv(rows), {
     headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="SAL_${st.deck.week_label.replace(/\W+/g, '_')}.csv"` },
   });

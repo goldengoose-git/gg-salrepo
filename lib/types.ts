@@ -1,4 +1,4 @@
-import type { Area, BarStatus, Lane, Status } from './constants';
+import type { AmsStatus, Area, BarStatus, Lane, Status } from './constants';
 
 export type Deck = {
   id: string; week_label: string; sal_date: string | null; client: string; subtitle: string; date_label: string; year: number;
@@ -8,7 +8,7 @@ export type Deck = {
 };
 export type Item = {
   id: string; deck_id: string; area: Area; position: number; code: string; type: string; description: string;
-  priority: string; requested_date: string; golive_date: string; owner: string; estimate: string; contract: string; activity: string;
+  priority: string; requested_date: string; golive_date: string; release_date: string; ams_status: AmsStatus | null; owner: string; estimate: string; contract: string; activity: string;
   status: Status; archived_at: string | null; closed_at: string | null; updated_by: string | null; updated_at: string;
 };
 export type Bar = {

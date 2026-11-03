@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     return json({ ok: true, recoverable: r[0].n });
   }
   const r = await q<{ id: string }>(
-    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, updated_by)
-     select $1, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, $3
+    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, updated_by)
+     select $1, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, $3
      ${missing} returning id`,
     [deck.id, areas, me.username]
   );

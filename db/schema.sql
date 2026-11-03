@@ -123,3 +123,13 @@ create table if not exists login_attempts (
 create index if not exists login_attempts_ip_at on login_attempts (ip, at desc)
 ;
 create index if not exists login_attempts_user_at on login_attempts (username, at desc)
+;
+alter table items add column if not exists release_date text not null default ''
+;
+alter table items add column if not exists ams_status text
+;
+alter table items drop constraint if exists items_ams_status_check
+;
+alter table items add constraint items_ams_status_check check (ams_status is null or ams_status in ('new','wip','waiting','testing','ready','done'))
+;
+update items set ams_status = case status when 'completed' then 'done' when 'ontrack' then 'wip' else 'waiting' end where area = 'AMS' and ams_status is null

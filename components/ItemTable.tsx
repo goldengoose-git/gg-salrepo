@@ -1,12 +1,12 @@
 'use client';
 import { useRef, useState } from 'react';
-import { areasFor, type Area } from '@/lib/constants';
+import { AMS_KEYS, AMS_STATUS, areasFor, type Area } from '@/lib/constants';
 import { api } from '@/lib/client';
 import type { Item } from '@/lib/types';
 import { useApp } from './AppShell';
 import { Ic } from './icons';
 import ItemModal from './ItemModal';
-import { StatusPill } from './StatusPill';
+import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
 import { fmtEstimate, parseContract } from '@/lib/lookups';
 
@@ -27,7 +27,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
   const [fs, setFs] = useState('');
   const canEdit = areasFor(me.role).includes(area);
   const all = state!.items.filter((i) => i.area === area && !i.archived_at).sort((a, b) => a.position - b.position);
-  const rows = all.filter((i) => (!fs || i.status === fs) && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
+  const rows = all.filter((i) => (!fs || (area === 'AMS' ? i.ams_status === fs : i.status === fs)) && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
   const ams = area === 'AMS';
   const showType = area !== 'AMS';
   const [drag, setDrag] = useState<string | null>(null);
@@ -51,8 +51,8 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
     <>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ width: 260 }}><input placeholder="Cerca…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-        {['', 'ontrack', 'delay', 'blocked', 'onhold'].map((s) => (
-          <button key={s} className={'chip' + (fs === s ? ' on' : '')} onClick={() => setFs(s)}>{s ? s : 'Tutti'} {s ? all.filter((i) => i.status === s).length : all.length}</button>
+        {(area === 'AMS' ? ['', ...AMS_KEYS.filter((k) => k !== 'done')] : ['', 'ontrack', 'delay', 'blocked', 'onhold']).map((s) => (
+          <button key={s} className={'chip' + (fs === s ? ' on' : '')} onClick={() => setFs(s)}>{s ? (area === 'AMS' ? AMS_STATUS[s as keyof typeof AMS_STATUS].label : s) : 'Tutti'} {s ? all.filter((i) => (area === 'AMS' ? i.ams_status : i.status) === s).length : all.length}</button>
         ))}
         <span className="sp" />
         {!canEdit && <span className="muted">Sola lettura: area dell&apos;altro team</span>}
@@ -62,7 +62,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
         <table className="t">
           <thead><tr>
             {canDrag && <th style={{ width: 28, padding: 0 }} />}<th style={{ width: 80 }}>{ams ? 'Ticket' : 'ID'}</th>{showType && <th>Type</th>}<th>{ams ? 'Subject' : 'Description'}</th><th>Priorità</th>
-            <th>{ams ? 'Opened' : 'Requested'}</th>{!ams && <th>GoLive</th>}<th>Owner</th>{!ams && <th>Stima</th>}{!ams && <th>Contract</th>}<th>Status</th><th style={{ width: 118 }} />
+            <th>{ams ? 'Opened' : 'Requested'}</th>{!ams && <th>GoLive</th>}{!ams && <th>Rilascio</th>}<th>Owner</th>{!ams && <th>Stima</th>}{!ams && <th>Contract</th>}<th>Status</th><th style={{ width: 118 }} />
           </tr></thead>
           <tbody>
             {rows.map((i) => {
@@ -79,8 +79,8 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                     onMouseDown={() => { grip.current = true; }} onMouseUp={() => { grip.current = false; }}>⋮⋮</td>}
                   <td><b>{ams ? i.code : `${prefix}-${String(n).padStart(2, '0')}`}</b></td>
                   {showType && <td>{i.type}</td>}
-                  <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}
-                  <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td><StatusPill s={i.status} />{ams && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
+                  <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}{!ams && <td>{i.release_date}</td>}
+                  <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td><ItemPill i={i} />{ams && !i.ams_status && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
                   <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                     {canEdit && <>
                       <button className="ib" title="Su" disabled={n === 1} onClick={() => act(i.id, { move: 'up' })}><Ic n="up" /></button>{' '}
@@ -91,7 +91,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                 </tr>
               );
             })}
-            {!rows.length && <tr><td colSpan={13} className="muted" style={{ padding: 24, textAlign: 'center' }}>Nessuna voce.</td></tr>}
+            {!rows.length && <tr><td colSpan={14} className="muted" style={{ padding: 24, textAlign: 'center' }}>Nessuna voce.</td></tr>}
           </tbody>
         </table>
       </div>

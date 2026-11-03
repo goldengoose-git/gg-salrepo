@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useApp } from '@/components/AppShell';
-import { StatusPill } from '@/components/StatusPill';
+import { ItemPill } from '@/components/StatusPill';
 import { Ic } from '@/components/icons';
 import { areasFor } from '@/lib/constants';
 import { api, download } from '@/lib/client';
@@ -39,7 +39,7 @@ export default function Archivio() {
               {rows.map((i) => (
                 <tr key={i.id}>
                   <td style={{ borderLeft: '4px solid #7135A8' }}><b>{i.area}</b></td><td>{i.code}</td><td>{i.type}</td><td style={{ minWidth: 240 }}>{i.description}</td>
-                  <td><Prio p={i.priority} size={15} /></td><td>{i.golive_date}</td><td>{i.owner}</td><td>{i.contract}</td><td><StatusPill s={i.status} /></td>
+                  <td><Prio p={i.priority} size={15} /></td><td>{i.golive_date}</td><td>{i.owner}</td><td>{i.contract}</td><td><ItemPill i={i} /></td>
                   <td>{(i.closed_at ?? i.archived_at ?? '').slice(0, 10)}</td>
                   <td>{areasFor(me.role).includes(i.area) && (
                     <button className="btn" style={{ height: 28 }} onClick={async () => { await api(`/api/items/${i.id}`, 'PATCH', { restore: true }); await reload(); toast('Ripristinato'); }}><Ic n="undo" />Ripristina</button>)}</td>

@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   // ripristino dall'archivio
   if (b.restore) {
     const pos = await q<{ m: number }>('select coalesce(max(position),0)::int + 1 as m from items where deck_id=$1 and area=$2', [it.deck_id, it.area]);
-    await q(`update items set status='ontrack', archived_at=null, closed_at=null, position=$1, updated_by=$2, updated_at=now() where id=$3`, [pos[0].m, me.username, id]);
+    await q(`update items set status='ontrack', ams_status = case when ams_status = 'done' then 'wip' else ams_status end, archived_at=null, closed_at=null, position=$1, updated_by=$2, updated_at=now() where id=$3`, [pos[0].m, me.username, id]);
     await audit(me, 'restore', 'item', id);
     return json({ ok: true });
   }
@@ -47,6 +47,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   for (const k of TXT) if (c[k] !== undefined) { vals.push(c[k]); sets.push(`${k} = $${vals.length}`); }
   if (c.status) {
     vals.push(c.status); sets.push(`status = $${vals.length}`);
+    if (c.ams_status) { vals.push(c.ams_status); sets.push(`ams_status = $${vals.length}`); }
     if (c.status === 'completed') sets.push('archived_at = coalesce(archived_at, now())', 'closed_at = coalesce(closed_at, now())');
     else sets.push('archived_at = null', 'closed_at = null');
   }
