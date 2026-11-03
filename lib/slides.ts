@@ -9,7 +9,7 @@ export type Slide =
   | { kind: 'cover' }
   | { kind: 'section'; title: string }
   | { kind: 'closing' }
-  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; tier?: 0 | 1 | 2 }
+  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; tier?: 0 | 1 }
   | { kind: 'pipeline'; title: string; part: string; year: number; today: number; lanes: PLane[] };
 
 const chunk = <T,>(a: T[], n: number) => {
@@ -19,15 +19,14 @@ const chunk = <T,>(a: T[], n: number) => {
 };
 const sLabel = (s: Status) => STATUS[s].label;
 
-// ---- paginazione: si forza sempre, quando i dati lo permettono, di avere almeno MIN_ROWS righe per slide ----
-// Tre livelli di densita (0 normale, 1 compatto con footer ridotto, 2 extra-compatto con footer minimo), sempre con un massimo di 12 righe per slide.
-// Vince il livello piu leggibile che non lascia slide (tranne l'ultima) sotto le 10 righe; le righe sono ripartite in modo uniforme.
-export type Tier = 0 | 1 | 2;
-const TABLE_W = 1190, MIN_ROWS = 10;
+// ---- paginazione: si contano tutte le voci e si riempiono le slide fino a 12 righe (almeno 11 quando i dati lo permettono) ----
+// Due livelli di densita: 0 normale (font 12,5 px), 1 compatto (font 11 px, footer ridotto). Il corpo non scende mai sotto 11 px.
+// L'ultima slide non resta con poche righe: si riportano righe dalla precedente finche questa resta >= 11.
+export type Tier = 0 | 1;
+const TABLE_W = 1190, MIN_ROWS = 11, MIN_LAST = 5;
 export const TIERS = [
   { cap: MAX_ROWS, body: 536, charW: 6.4, lh: 16, pad: 14, min: 44, padX: 16 },
-  { cap: MAX_ROWS, body: 556, charW: 5.6, lh: 13, pad: 8, min: 30, padX: 14 },
-  { cap: MAX_ROWS, body: 568, charW: 5.1, lh: 12, pad: 5, min: 24, padX: 12 },
+  { cap: MAX_ROWS, body: 556, charW: 5.6, lh: 13.5, pad: 8, min: 30, padX: 14 },
 ] as const;
 function estRowH(columns: Col[], cells: string[], tier: Tier = 0) {
   const T = TIERS[tier];
@@ -54,22 +53,19 @@ function paginate<T>(items: T[], heightOf: (x: T) => number, tier: Tier = 0, cap
   return pages;
 }
 function paginateSmart<T>(items: T[], heightOf: (x: T, tier: Tier) => number): { pages: T[][]; tier: Tier } {
-  // un candidato per livello, con righe ripartite in modo uniforme; vince chi ha meno slide sotto le 10 righe,
-  // poi meno slide, poi il livello piu leggibile
-  const cand = ([0, 1, 2] as Tier[]).map((tier) => {
+  const cand = ([0, 1] as Tier[]).map((tier) => {
     const h = (x: T) => heightOf(x, tier);
-    const short = (ps: T[][]) => (ps.length > 1 ? ps.filter((p) => p.length < MIN_ROWS).length : 0);
-    const spread = (ps: T[][]) => Math.max(...ps.map((p) => p.length)) - Math.min(...ps.map((p) => p.length));
-    let pages = paginate(items, h, tier);
-    if (pages.length > 1) {
-      // ripartizione uniforme, ma mai sotto le 10 righe per slide se si puo evitare
-      const n = Math.ceil(items.length / pages.length);
-      for (const cap of [n, Math.max(MIN_ROWS, n)]) {
-        const alt = paginate(items, h, tier, cap);
-        if (alt.length === pages.length && (short(alt) < short(pages) || (short(alt) === short(pages) && spread(alt) < spread(pages)))) pages = alt;
+    const pages = paginate(items, h, tier);
+    // l'ultima slide non deve restare con poche righe: si spostano righe dalla precedente (che resta >= MIN_ROWS)
+    for (let i = pages.length - 1; i > 0; i--) {
+      while (pages[i].length < MIN_LAST && pages[i - 1].length > MIN_ROWS) {
+        const mv = pages[i - 1][pages[i - 1].length - 1];
+        const hh = [mv, ...pages[i]].reduce((a, x) => a + h(x), 0);
+        if (hh > TIERS[tier].body) break;
+        pages[i - 1].pop(); pages[i].unshift(mv);
       }
     }
-    const shortN = short(pages);
+    const shortN = pages.length > 1 ? pages.filter((p) => p.length < MIN_ROWS).length : 0;
     return { pages, tier, key: [shortN, pages.length, tier] };
   });
   cand.sort((x, y) => x.key[0] - y.key[0] || x.key[1] - y.key[1] || x.key[2] - y.key[2]);

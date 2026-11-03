@@ -94,7 +94,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
   };
 
   let pageNo = 0;
-  const FOOT_H = [34, 26, 20], FOOT_PT = [10, 8.5, 7.5], BODY_PT = [8.5, 7.5, 6.8], ROW_PX = [44, 30, 24], TOP_PX = [100, 94, 92];
+  const FOOT_H = [34, 26], FOOT_PT = [10, 8.5], BODY_PT = [8.5, 8.5], ROW_PX = [44, 32], TOP_PX = [100, 94]; // corpo mai sotto 8,5 pt (= 11 px)
   const footer = (s: PptxGenJS.Slide, t: number) => {
     const fh = FOOT_H[t], fs = FOOT_PT[t];
     s.addShape('line', { x: px(46), y: 7.5 - px(fh), w: px(1200), h: 0, line: { color: '111111', width: t ? 1 : 1.5 } });

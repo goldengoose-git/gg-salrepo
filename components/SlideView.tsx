@@ -42,7 +42,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
   if (s.kind === 'table') {
     const tot = s.columns.reduce((a, c) => a + c.w, 0);
     return (
-      <div className={'slide' + (s.tier ? ' dense' : '') + (s.tier === 2 ? ' ultra' : '')}>
+      <div className={'slide' + (s.tier ? ' dense' : '')}>
         {deck.bg_table_url && <div className="bgimg" style={{ backgroundImage: `url(${deck.bg_table_url})` }} />}
         <div className="edge" style={s.theme === 'completed' ? { background: '#7135A8' } : undefined} />
         <div className="ttl">{s.title}{s.part && <span className="part">({s.part})</span>}</div>

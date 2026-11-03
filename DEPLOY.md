@@ -9,7 +9,7 @@ Questa release contiene anche la regola "Completed resta nella week" già pronta
 - **Admin › Colori ed Elenchi**: colori label (stati, AMS, timeline, **OPEX/CAPEX**) **solo interfaccia interna** (slide, PPTX e PDF invariati); modifica Type MC, Type SC, Owner, Contract con rinomina/unione su **tutte le settimane**.
 - **Admin › Normalizza date**: solo **settimana corrente**; Sept→Sep, June→Jun, Beginning→Beg…; regole personalizzate, anteprima, annulla ultima normalizzazione.
 - **Barra laterale**: la sezione corrente è evidenziata (sfondo, barra rossa a sinistra, grassetto, `aria-current`).
-- **Slide**: si punta ad almeno 10 righe per slide; massimo 12 righe per slide; se servono per arrivare a 10, la tabella si compatta (font, margini e footer più piccoli) e le righe sono ripartite in modo uniforme. Il logo destro non compare più sulle slide tabella. Vale per anteprima, PDF e PPTX.
+- **Slide**: si punta ad almeno 10 righe per slide; massimo 12 righe per slide, almeno 11 sulle slide piene (corpo mai sotto 11 px); se servono per arrivare a 11, la tabella si compatta (font, margini e footer più piccoli) e le righe sono ripartite in modo uniforme. Il logo destro non compare più sulle slide tabella. Vale per anteprima, PDF e PPTX.
 - **scripts/weekly-check.mjs**: scarica i backup e verifica la coerenza (vedi sotto).
 
 ## Prima di iniziare
