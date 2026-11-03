@@ -4,6 +4,7 @@ import { useApp } from '@/components/AppShell';
 import Modal from '@/components/Modal';
 import { Ic } from '@/components/icons';
 import { BAR_STATUS, LANES, lanesFor, type BarStatus, type Lane } from '@/lib/constants';
+import { uiBar } from '@/lib/ui-colors';
 import { api } from '@/lib/client';
 import { layoutBars, todayPos } from '@/lib/slides';
 import type { Bar } from '@/lib/types';
@@ -57,7 +58,7 @@ export default function Timeline() {
     <>
       <div className="top"><h2>Timeline progetti {state!.deck.year}</h2><span className="sp" />
         <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--fg2)', alignItems: 'center' }}>
-          {(Object.keys(BAR_STATUS) as BarStatus[]).map((k) => <span key={k}><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: BAR_STATUS[k].color, marginRight: 6 }} />{BAR_STATUS[k].label}</span>)}
+          {(Object.keys(BAR_STATUS) as BarStatus[]).map((k) => <span key={k}><i style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: uiBar(state!.uiColors, k).color, marginRight: 6 }} />{BAR_STATUS[k].label}</span>)}
         </div>
         <button className="btn" onClick={() => setCompact((v) => !v)} aria-pressed={compact}>{compact ? "Vista ampia" : "Vista compatta"}</button>
         <button className="btn pri" onClick={() => open()}><Ic n="plus" />Nuova attività</button></div>
@@ -87,7 +88,7 @@ export default function Timeline() {
                     <button key={b.id} className="tl-bar" disabled={!editable} onClick={() => open(b)} title={b.label}
                       style={{ left: `${left}%`, width: `${width}%`, top: 5 + row * PITCH, height: compact ? 20 : 26,
                         fontSize: compact ? 10.5 : 12, padding: compact ? '0 5px' : '0 9px',
-                        background: BAR_STATUS[b.status].color, color: BAR_STATUS[b.status].text,
+                        background: uiBar(state!.uiColors, b.status).color, color: uiBar(state!.uiColors, b.status).text,
                         cursor: editable ? 'pointer' : 'default' }}>
                       {b.label}
                     </button>

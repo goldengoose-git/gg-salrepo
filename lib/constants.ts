@@ -1,4 +1,4 @@
-export type Role = 'MC' | 'SC';
+export type Role = 'MC' | 'SC' | 'ADMIN';
 export type Area = 'MC' | 'SC' | 'AMS';
 export type Status = 'ontrack' | 'delay' | 'blocked' | 'onhold' | 'completed';
 export type AmsStatus = 'new' | 'wip' | 'waiting' | 'testing' | 'ready' | 'done';
@@ -48,8 +48,8 @@ export const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 export const LANES: Lane[] = ['SFMC', 'CROSS', 'SFSC'];
 export const MAX_ROWS = 12;
 
-export const areasFor = (r: Role): Area[] => (r === 'MC' ? ['MC'] : ['SC', 'AMS']);
-export const lanesFor = (r: Role): Lane[] => (r === 'MC' ? ['SFMC', 'CROSS'] : ['SFSC']);
+export const areasFor = (r: Role): Area[] => (r === 'ADMIN' ? ['MC', 'SC', 'AMS'] : r === 'MC' ? ['MC'] : ['SC', 'AMS']);
+export const lanesFor = (r: Role): Lane[] => (r === 'ADMIN' ? ['SFMC', 'CROSS', 'SFSC'] : r === 'MC' ? ['SFMC', 'CROSS'] : ['SFSC']);
 
 export type Col = { name: string; w: number; align: 'l' | 'c' };
 export const COLS: Record<'mc' | 'sc' | 'ams' | 'amsblock' | 'completed', Col[]> = {

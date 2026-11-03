@@ -7,6 +7,7 @@ import { useApp } from './AppShell';
 import Modal from './Modal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
+import { uiAms, uiStatus } from '@/lib/ui-colors';
 import { joinContract, joinOwners, normEstimate, parseContract, parseOwners } from '@/lib/lookups';
 
 const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', release_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status, ams_status: 'new' as AmsStatus };
@@ -115,7 +116,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {AMS_KEYS.map((s) => (
               <button type="button" key={s} onClick={() => setF({ ...f, ams_status: s, status: AMS_STATUS[s].status })} className="pill"
-                style={{ background: AMS_STATUS[s].color, color: AMS_STATUS[s].text, border: f.ams_status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.ams_status === s ? 1 : 0.55 }}>
+                style={{ background: uiAms(state?.uiColors, s).color, color: uiAms(state?.uiColors, s).text, border: f.ams_status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.ams_status === s ? 1 : 0.55 }}>
                 {AMS_STATUS[s].label}
               </button>
             ))}
@@ -127,7 +128,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {STATUS_KEYS.map((s) => (
               <button type="button" key={s} onClick={() => setF({ ...f, status: s })} className="pill"
-                style={{ background: STATUS[s].color, color: STATUS[s].text, border: f.status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
+                style={{ background: uiStatus(state?.uiColors, s).color, color: uiStatus(state?.uiColors, s).text, border: f.status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
                 {STATUS[s].label}
               </button>
             ))}

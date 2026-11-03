@@ -1,4 +1,8 @@
-import type { AmsStatus, Area, BarStatus, Lane, Status } from './constants';
+import type { AmsStatus, Area, BarStatus, Lane, Role, Status } from './constants';
+
+export type ColorPair = { color: string; text: string };
+/** Colori personalizzati SOLO per l'interfaccia interna (non per slide, PPTX, PDF). */
+export type UiColors = { status?: Partial<Record<Status, ColorPair>>; ams?: Partial<Record<AmsStatus, ColorPair>>; bar?: Partial<Record<BarStatus, ColorPair>> };
 
 export type Deck = {
   id: string; week_label: string; sal_date: string | null; client: string; subtitle: string; date_label: string; year: number;
@@ -17,5 +21,5 @@ export type Bar = {
 export type SnapshotRow = { id: string; week_label: string; created_by: string | null; created_at: string };
 export type Lookup = { id: string; kind: 'type_mc' | 'type_sc' | 'owner' | 'contract_label'; value: string; position: number };
 export type TeamStatus = { team: 'MC' | 'SC'; done_at: string; done_by: string | null };
-export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[]; teamStatus: TeamStatus[] };
-export type Me = { username: string; role: 'MC' | 'SC'; name: string };
+export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[]; teamStatus: TeamStatus[]; uiColors: UiColors };
+export type Me = { username: string; role: Role; name: string };

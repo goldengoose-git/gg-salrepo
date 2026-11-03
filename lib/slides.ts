@@ -9,7 +9,7 @@ export type Slide =
   | { kind: 'cover' }
   | { kind: 'section'; title: string }
   | { kind: 'closing' }
-  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean }
+  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; dense?: boolean }
   | { kind: 'pipeline'; title: string; part: string; year: number; today: number; lanes: PLane[] };
 
 const chunk = <T,>(a: T[], n: number) => {
@@ -19,29 +19,49 @@ const chunk = <T,>(a: T[], n: number) => {
 };
 const sLabel = (s: Status) => STATUS[s].label;
 
-// ---- paginazione: max 12 righe, ma anche solo quante ne stanno sopra la riga di chiusura ----
-const TABLE_W = 1190, BODY_H = 536;
-function estRowH(columns: Col[], cells: string[]) {
+// ---- paginazione: si prova sempre ad avere almeno MIN_ROWS righe per slide ----
+// Prima in modo normale (max 12 righe); se una slide (non l'ultima) resterebbe sotto le 10 righe la tabella passa alla
+// modalita compatta (font e margini piu piccoli, max 14 righe) per tutte le slide di quella tabella.
+const TABLE_W = 1190, BODY_H = 536, BODY_H_DENSE = 548, MAX_ROWS_DENSE = 14, MIN_ROWS = 10;
+function estRowH(columns: Col[], cells: string[], dense = false) {
   const tot = columns.reduce((a, c) => a + c.w, 0);
+  const charW = dense ? 5.6 : 6.4, lh = dense ? 13 : 16, pad = dense ? 8 : 14, min = dense ? 30 : 44;
   let lines = 1;
   cells.forEach((t, i) => {
-    const px = (columns[i].w / tot) * TABLE_W - 16;
-    const cpl = Math.max(4, Math.floor(px / 6.4));
+    const px = (columns[i].w / tot) * TABLE_W - (dense ? 14 : 16);
+    const cpl = Math.max(4, Math.floor(px / charW));
     const l = String(t ?? '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
     if (l > lines) lines = l;
   });
-  return Math.max(44, lines * 16 + 14);
+  return Math.max(min, lines * lh + pad);
 }
-function paginate<T>(items: T[], heightOf: (x: T) => number): T[][] {
+function paginate<T>(items: T[], heightOf: (x: T) => number, dense = false, capOverride?: number): T[][] {
+  const cap = capOverride ?? (dense ? MAX_ROWS_DENSE : MAX_ROWS), budget = dense ? BODY_H_DENSE : BODY_H;
   const pages: T[][] = [];
   let cur: T[] = [], acc = 0;
   for (const it of items) {
     const h = heightOf(it);
-    if (cur.length && (cur.length >= MAX_ROWS || acc + h > BODY_H)) { pages.push(cur); cur = []; acc = 0; }
+    if (cur.length && (cur.length >= cap || acc + h > budget)) { pages.push(cur); cur = []; acc = 0; }
     cur.push(it); acc += h;
   }
   if (cur.length || !pages.length) pages.push(cur);
   return pages;
+}
+function paginateSmart<T>(items: T[], heightOf: (x: T, dense: boolean) => number): { pages: T[][]; dense: boolean } {
+  // due candidati (normale e compatto), con righe ripartite in modo uniforme tra le slide; vince quello con meno slide sotto le 10 righe,
+  // poi con meno slide, poi quello normale
+  const cand = [false, true].map((dense) => {
+    const h = (x: T) => heightOf(x, dense);
+    let pages = paginate(items, h, dense);
+    if (pages.length > 1) {
+      const alt = paginate(items, h, dense, Math.ceil(items.length / pages.length));
+      if (alt.length === pages.length) pages = alt;
+    }
+    const shortN = pages.length > 1 ? pages.filter((p) => p.length < MIN_ROWS).length : 0;
+    return { pages, dense, key: [shortN, pages.length, dense ? 1 : 0] };
+  });
+  cand.sort((x, y) => x.key[0] - y.key[0] || x.key[1] - y.key[1] || x.key[2] - y.key[2]);
+  return { pages: cand[0].pages, dense: cand[0].dense };
 }
 
 export function todayPos(d = new Date()) {
@@ -94,14 +114,14 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   };
   const tableSlides = (theme: 'mc' | 'sc', title: string, items: Item[]) => {
     const cols = COLS[theme];
-    const pages = paginate(items, (it) => estRowH(cols, cellsOf(theme, it, '00')));
+    const { pages, dense } = paginateSmart(items, (it, d) => estRowH(cols, cellsOf(theme, it, '00'), d));
     let n0 = 0;
     pages.forEach((page, p) => {
       const rows: SRow[] = page.map((it, k) => ({ cells: cellsOf(theme, it, String(n0 + k + 1)), status: it.status }));
       n0 += page.length;
       slides.push({
         kind: 'table', theme, title, part: pages.length > 1 ? `${p + 1}/${pages.length}` : '', columns: cols, rows,
-        statusCol: cols.length - 1, prioCol: cols.findIndex((c) => c.name === 'Priorità'), legend: true,
+        statusCol: cols.length - 1, prioCol: cols.findIndex((c) => c.name === 'Priorità'), legend: true, dense,
       });
     });
   };
@@ -151,11 +171,11 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
     const arch = st.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
     if (arch.length) {
       const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
-      const pages = paginate(arch, (it) => estRowH(COLS.completed, cc(it)));
+      const { pages, dense } = paginateSmart(arch, (it, d) => estRowH(COLS.completed, cc(it), d));
       pages.forEach((page, p, all) => {
         slides.push({
           kind: 'table', theme: 'completed', title: 'Completed Activities', part: all.length > 1 ? `${p + 1}/${all.length}` : '',
-          columns: COLS.completed, statusCol: 7, prioCol: 2, legend: false,
+          columns: COLS.completed, statusCol: 7, prioCol: 2, legend: false, dense,
           rows: page.map((it) => ({ completed: true, status: 'completed' as Status, cells: cc(it) })),
         });
       });

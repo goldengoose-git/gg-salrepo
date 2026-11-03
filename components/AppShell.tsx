@@ -22,6 +22,13 @@ const NAV = [
   { href: '/impostazioni', label: 'Sfondi e loghi', ic: 'img' },
 ];
 
+const ADMIN_NAV = [
+  { href: '/admin/backup', label: 'Backup e ripristino', ic: 'dl' },
+  { href: '/admin/etichette', label: 'Colori ed Elenchi', ic: 'ed' },
+  { href: '/admin/normalizza', label: 'Normalizza date', ic: 'undo' },
+];
+const isOn = (path: string, href: string) => path === href || path.startsWith(href + '/');
+
 export default function AppShell({ me, children }: { me: Me; children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
   const [msg, setMsg] = useState('');
@@ -47,15 +54,23 @@ export default function AppShell({ me, children }: { me: Me; children: React.Rea
           <div className="logo m"><i />SAL Builder</div>
           <div className="lab" style={{ padding: '0 10px 8px' }}>{state?.deck.week_label ?? '…'}</div>
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className={'nav' + (path.startsWith(n.href) ? ' on' : '')}><Ic n={n.ic} />{n.label}</Link>
+            <Link key={n.href} href={n.href} className={'nav' + (isOn(path, n.href) ? ' on' : '')} aria-current={isOn(path, n.href) ? 'page' : undefined}><Ic n={n.ic} />{n.label}</Link>
           ))}
+          {me.role === 'ADMIN' && (
+            <div className="adm">
+              <div className="lab" style={{ padding: '0 10px 6px' }}>Admin All</div>
+              {ADMIN_NAV.map((n) => (
+                <Link key={n.href} href={n.href} className={'nav' + (isOn(path, n.href) ? ' on' : '')} aria-current={isOn(path, n.href) ? 'page' : undefined}><Ic n={n.ic} />{n.label}</Link>
+              ))}
+            </div>
+          )}
           <div className="who">
-            <b style={{ color: 'var(--fgb)' }}>{me.name}</b><br />{me.role === 'MC' ? 'Marketing Cloud' : 'CRM e Service Cloud'}
+            <b style={{ color: 'var(--fgb)' }}>{me.name}</b><br />{me.role === 'ADMIN' ? 'Admin All · vede e scrive tutto' : me.role === 'MC' ? 'Marketing Cloud' : 'CRM e Service Cloud'}
             <div style={{ marginTop: 10 }}><ThemeToggle style={{ height: 28, fontSize: 12.5 }} /></div>
             <button onClick={async () => { await api('/api/logout', 'POST'); router.push('/login'); router.refresh(); }}>Esci</button>
           </div>
         </aside>
-        <div className="main">{state ? <>{(path.startsWith('/azioni') || path.startsWith('/ticket')) && <TeamStrip />}{children}</> : <div className="body muted">Caricamento…</div>}</div>
+        <div className="main">{state ? <>{me.role !== 'ADMIN' && (path.startsWith('/azioni') || path.startsWith('/ticket')) && <TeamStrip />}{children}</> : <div className="body muted">Caricamento…</div>}</div>
       </div>
       {msg && <div className="toast">{msg}</div>}
     </C.Provider>

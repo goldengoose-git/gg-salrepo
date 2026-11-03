@@ -10,13 +10,14 @@ const key = () => {
 };
 
 export async function createSession(me: Me) {
+  const admin = me.role === 'ADMIN'; // sessione Admin All piu corta: 8 ore
   const token = await new SignJWT({ ...me })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('2d')
+    .setExpirationTime(admin ? '8h' : '2d')
     .sign(key());
   (await cookies()).set(COOKIE, token, {
-    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 2,
+    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: admin ? 60 * 60 * 8 : 60 * 60 * 24 * 2,
   });
 }
 export async function destroySession() {

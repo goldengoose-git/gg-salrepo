@@ -1,4 +1,4 @@
-// Crea le tabelle, i 2 utenti (MC, SC) e il primo deck. Idempotente.
+// Crea le tabelle, gli utenti (MC, SC, Admin All) e il primo deck. Idempotente.
 import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { readFileSync } from 'node:fs';
@@ -51,6 +51,7 @@ console.log('Stime normalizzate');
 const users = [
   { username: 'mc', role: 'MC', name: 'Utente MC', pwd: process.env.MC_PASSWORD },
   { username: 'sc', role: 'SC', name: 'Utente SC', pwd: process.env.SC_PASSWORD },
+  { username: 'admin', role: 'ADMIN', name: 'Admin All', pwd: process.env.ADMIN_PASSWORD },
 ];
 for (const u of users) {
   if (!u.pwd) { console.warn(`Password ${u.role} non impostata: utente ${u.username} non aggiornato`); continue; }

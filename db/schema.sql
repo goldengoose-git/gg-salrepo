@@ -133,3 +133,10 @@ alter table items drop constraint if exists items_ams_status_check
 alter table items add constraint items_ams_status_check check (ams_status is null or ams_status in ('new','wip','waiting','testing','ready','done'))
 ;
 update items set ams_status = case status when 'completed' then 'done' when 'ontrack' then 'wip' else 'waiting' end where area = 'AMS' and ams_status is null
+
+;
+alter table users drop constraint if exists users_role_check
+;
+alter table users add constraint users_role_check check (role in ('MC','SC','ADMIN'))
+;
+create index if not exists audit_log_action_at on audit_log (action, at desc)

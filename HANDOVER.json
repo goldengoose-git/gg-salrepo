@@ -1,0 +1,136 @@
+{
+  "format": "sal-builder-handover",
+  "version": "2026-11-03b",
+  "app": {
+    "name": "Weekly SAL Builder",
+    "client": "Golden Goose",
+    "repo": "goldengoose-git/gg-salrepo",
+    "stack": [
+      "Next.js 15 (app router)",
+      "React 19",
+      "TypeScript strict",
+      "Neon Postgres (HTTP driver)",
+      "Vercel",
+      "Vercel Blob"
+    ],
+    "users": {
+      "MC": {
+        "areas": [
+          "MC"
+        ],
+        "lanes": [
+          "SFMC",
+          "CROSS"
+        ]
+      },
+      "SC": {
+        "areas": [
+          "SC",
+          "AMS"
+        ],
+        "lanes": [
+          "SFSC"
+        ]
+      },
+      "ADMIN": {
+        "areas": [
+          "MC",
+          "SC",
+          "AMS"
+        ],
+        "lanes": [
+          "SFMC",
+          "CROSS",
+          "SFSC"
+        ],
+        "login": "/accesso-riservato (nascosto, user admin, sessione 8h)"
+      }
+    }
+  },
+  "data_model": {
+    "tables": {
+      "decks": "una riga per settimana; l'app usa il piu recente (created_at)",
+      "items": "voci MC/SC/AMS con status, archived_at, closed_at, release_date, golive_date, ams_status",
+      "pipeline_bars": "barre timeline con lane, start_m, end_m, row",
+      "snapshots": "istantanee",
+      "lookups": "liste valori",
+      "settings": "impostazioni",
+      "team_status": "stato team",
+      "audit_log": "audit",
+      "login_attempts": "rate limit login"
+    },
+    "status_mc_sc": [
+      "ontrack",
+      "delay",
+      "blocked",
+      "onhold",
+      "completed"
+    ],
+    "status_ams_jira": {
+      "new": "ontrack",
+      "wip": "ontrack",
+      "waiting": "delay",
+      "testing": "ontrack",
+      "ready": "ontrack",
+      "done": "completed"
+    }
+  },
+  "rules": {
+    "completed": [
+      "Completed/Done resta attivo nella week corrente (solo closed_at)",
+      "Nuova settimana (/api/deck/duplicate) copia tutto e inserisce gia archiviate le voci completed",
+      "Cambio stato da completed azzera archived_at e closed_at",
+      "Import Jira: ticket presente che diventa Done resta attivo; ticket Done nuovi entrano archiviati"
+    ]
+  },
+  "features": [
+    "tabelle per area con Rilascio e GoLive",
+    "timeline con layoutBars",
+    "anteprima, slide e PPTX",
+    "import JSON/CSV/Jira (merge per codice AMS)",
+    "export CSV/XLSX/backup JSON",
+    "restore da backup (/api/restore, additivo o overwrite)",
+    "recover-archive (?dryRun=1)",
+    "Admin All: backup JSON/XLS/DB completo (/api/admin/backup-db, .json.gz in streaming)",
+    "Admin All: colori label solo UI (settings.ui_colors), elenchi su tutte le settimane, normalizza date solo settimana corrente con undo",
+    "Ticket AMS: import CSV Jira con anteprima",
+    "Slide: almeno 10 righe, modalita compatta (dense) fino a 14",
+    "scripts/weekly-check.mjs: verifica coerenza settimanale"
+  ],
+  "security": [
+    "bcryptjs + JWT cookie sal_session (2 giorni)",
+    "middleware con route pubbliche limitate e check Origin",
+    "ruoli server-side",
+    "login_attempts rate limit",
+    "Turnstile opzionale",
+    "CSP/header in next.config.mjs",
+    "ruolo ADMIN: needAdmin() lato server, limiti login 5/15min, BACKUP_TOKEN opzionale per i soli backup in lettura"
+  ],
+  "deploy": {
+    "steps": [
+      "rsync dello zip nel repo escludendo .env.local .DS_Store node_modules .next .git",
+      "git status (.env.local non deve comparire)",
+      "git add -A; git commit; git push origin main",
+      "attendere Ready su Vercel e ricaricare l'app"
+    ],
+    "rules": [
+      "npm run db:migrate PRIMA del deploy se cambia lo schema",
+      "backup branch Neon con auto-delete Never",
+      "segreti mai in chat o commit"
+    ],
+    "known_issues": {
+      "git push 503/P3P": "proxy aziendale: hotspot o VPN off",
+      "Everything up-to-date dopo errore": "push gia arrivato: git log origin/main + Vercel"
+    }
+  },
+  "status": {
+    "production_commit": "13a6049",
+    "pending": [
+      "copiare zip, db:migrate (ADMIN_PASSWORD), commit e push (vedi DEPLOY.md)",
+      "verifica visiva PPTX con slide compatte",
+      "import Jira come SC/Admin dopo backup",
+      "eliminare branch Neon inutili",
+      "aggiornare documento funzionale"
+    ]
+  }
+}

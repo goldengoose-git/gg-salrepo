@@ -134,7 +134,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       const accent = sl.theme === 'completed' ? '7135A8' : 'E0301E';
       const header = sl.columns.map((c) => ({
         text: c.name,
-        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: 8.5, align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
+        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: sl.dense ? 7.5 : 8.5, align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
           border: [white, white, { type: 'solid' as const, pt: 2.25, color: accent }, white] },
       }));
       // testo con "(next step: …)" in grassetto, **x** in grassetto
@@ -151,7 +151,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
         r.cells.map((t, ci) => {
           const col = sl.columns[ci];
           const zebra = ri % 2 === 1 ? 'F4F4F4' : 'FFFFFF';
-          const base: any = { fontFace: FONT_B, fontSize: 8.5, valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
+          const base: any = { fontFace: FONT_B, fontSize: sl.dense ? 7.5 : 8.5, valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
           if (ci === 0 && r.status) {
             const st = STATUS[r.status];
             return { text: clean(t), options: { ...base, fontFace: FONT_T, bold: true, fontSize: 10, align: 'center', color: hex(st.ink), fill: { color: hex(st.tint) },
@@ -170,10 +170,10 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
             if (k) return { text: [{ text: PRIO[k].glyph + ' ', options: { color: hex(PRIO[k].c), bold: true, fontSize: 11 } }, { text: t, options: { color: '2C2D2C' } }], options: base };
           }
           if (ci === sl.statusCol) return { text: clean(t), options: { ...base, align: 'center' } };
-          return { text: runs(t, 8.5), options: base };
+          return { text: runs(t, sl.dense ? 7.5 : 8.5), options: base };
         })
       );
-      s.addTable([header, ...body] as any, { x: px(46), y: px(100), w: W, colW, rowH: sl.theme === 'ams' ? undefined : px(44), margin: [0.03, 0.08, 0.03, 0.08] });
+      s.addTable([header, ...body] as any, { x: px(46), y: px(100), w: W, colW, rowH: sl.theme === 'ams' ? undefined : px(sl.dense ? 30 : 44), margin: [0.03, 0.08, 0.03, 0.08] });
       footer(s, sl);
     } else if (sl.kind === 'pipeline') {
       s.background = { color: 'FFFFFF' };

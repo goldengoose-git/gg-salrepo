@@ -9,6 +9,7 @@ import ItemModal from './ItemModal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
 import { fmtEstimate, parseContract } from '@/lib/lookups';
+import { uiAms } from '@/lib/ui-colors';
 
 export function ContractPill({ v }: { v: string }) {
   const c = parseContract(v);
@@ -83,7 +84,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                   <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td onClick={ams && canEdit ? (e) => e.stopPropagation() : undefined}>
                     {ams && canEdit
                       ? <select className="amssel" value={i.ams_status ?? 'wip'} aria-label="Stato ticket"
-                          style={{ background: AMS_STATUS[i.ams_status ?? 'wip'].color, color: AMS_STATUS[i.ams_status ?? 'wip'].text }}
+                          style={{ background: uiAms(state!.uiColors, i.ams_status ?? 'wip').color, color: uiAms(state!.uiColors, i.ams_status ?? 'wip').text }}
                           onChange={(e) => act(i.id, { ams_status: e.target.value }, e.target.value === 'done' ? 'Ticket Done, spostato in Archivio' : 'Stato aggiornato')}>
                           {AMS_KEYS.map((k) => <option key={k} value={k} style={{ background: '#fff', color: '#111' }}>{AMS_STATUS[k].label}</option>)}
                         </select>
@@ -104,7 +105,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
           </tbody>
         </table>
       </div>
-      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Max 12 righe per slide: oltre, la tabella continua automaticamente sulla pagina successiva. Gli ID si rinumerano da soli. Trascina le righe dalla maniglia ⋮⋮ (con ricerca o filtro attivi il riordino è disattivato) oppure usa le frecce.</div>
+      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Si punta ad almeno 10 righe per slide (se servono, la tabella si compatta da sola, fino a 14 righe); oltre, continua sulla pagina successiva. Gli ID si rinumerano da soli. Trascina le righe dalla maniglia ⋮⋮ (con ricerca o filtro attivi il riordino è disattivato) oppure usa le frecce.</div>
       {edit && <ItemModal area={area} item={edit === 'new' ? undefined : edit} label={label} onClose={() => setEdit(null)} />}
     </>
   );
