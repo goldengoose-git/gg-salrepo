@@ -17,6 +17,15 @@ export default function Archivio() {
   return (
     <>
       <div className="top"><h2>Archivio · Completed Activities</h2><span className="sp" />
+        <button className="btn" title="Porta qui le voci archiviate nelle settimane precedenti, senza modificare né cancellare nulla" onClick={async () => {
+          try {
+            const c = await api<any>('/api/deck/recover-archive?dryRun=1', 'POST');
+            if (!c.recoverable) { toast('Nessuna voce da recuperare'); return; }
+            if (!confirm(`Recuperare ${c.recoverable} voci archiviate dalle settimane precedenti? Le voci già presenti non vengono duplicate.`)) return;
+            const r = await api<any>('/api/deck/recover-archive', 'POST'); await reload(); toast(`Recuperate ${r.recovered} voci`);
+          } catch (e: any) { toast(e.message); }
+        }}><Ic n="up" />Recupera da settimane precedenti</button>
+        <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
         <button className="btn" onClick={() => download('/api/export/xlsx', 'archivio.xlsx').catch((e) => toast(e.message))}><Ic n="dl" />Esporta XLSX</button></div>
       <div className="body">
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>

@@ -3,7 +3,7 @@ import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
 import { addDays, formatSalDate, isIso, weekLabel } from '@/lib/dates';
 
-// Nuova settimana: copia impostazioni, righe attive (non in archivio) e timeline.
+// Nuova settimana: copia impostazioni, tutte le righe (attive e in archivio) e timeline.
 export async function POST(req: Request) {
   const me = await needUser();
   if (isErr(me)) return me;
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
   );
   const id = nd[0].id;
   await q(
-    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, updated_by)
-     select $1, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, $3
-     from items where deck_id = $2 and archived_at is null`,
+    `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, updated_by)
+     select $1, area, position, code, type, description, priority, requested_date, golive_date, owner, estimate, contract, activity, status, archived_at, closed_at, $3
+     from items where deck_id = $2`,
     [id, cur.id, me.username]
   );
   await q(

@@ -30,6 +30,7 @@ export default function Anteprima() {
         <span className="muted">{d.status === 'published' ? `Pubblicata ${d.published_at?.slice(0, 10)}` : 'Bozza'}</span>
         <button className="btn" onClick={() => run(() => api('/api/deck/publish', 'POST'), 'Settimana pubblicata (copia salvata nello storico)')}>Pubblica settimana</button>
         <button className="btn" onClick={() => setDup({ sal_date: salNow ? addDays(salNow, 7) : '' })}><Ic n="cp" />Nuova settimana</button>
+        <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
         <button className="btn pri" onClick={() => setExp(true)}><Ic n="dl" />Esporta</button></div>
       <div className="body" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,300px)', gap: '18px 20px' }}>

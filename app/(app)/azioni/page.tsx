@@ -12,7 +12,8 @@ export default function Azioni() {
   return (
     <>
       <div className="top"><h2>Azioni {tab === 'MC' ? 'Marketing Cloud' : 'CRM & Service Cloud'}</h2><span className="sp" />
-        <button className="btn" onClick={() => setImp(true)}><Ic n="up" />Importa JSON</button></div>
+        <button className="btn" onClick={() => setImp(true)}><Ic n="up" />Importa JSON / CSV</button>
+        <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a></div>
       <div className="body">
         <div className="tabs">
           <button className={'tab' + (tab === 'MC' ? ' on' : '')} onClick={() => setTab('MC')}>Marketing Cloud{me.role === 'MC' ? ' (tue)' : ''}</button>

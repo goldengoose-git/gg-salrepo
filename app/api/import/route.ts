@@ -1,4 +1,6 @@
 import { applyImport, parseAny } from '@/lib/importer';
+import { csvToItems } from '@/lib/csv';
+import { areasFor } from '@/lib/constants';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
 import { q } from '@/lib/db';
@@ -12,7 +14,11 @@ export async function POST(req: Request) {
   if (!b?.json) return fail('JSON mancante');
   let parsed;
   try {
-    parsed = parseAny(typeof b.json === 'string' ? JSON.parse(b.json) : b.json);
+    const raw = typeof b.json === 'string' ? b.json.replace(/^\uFEFF/, '').trim() : b.json;
+    if (typeof raw === 'string' && !/^[{\[]/.test(raw)) {
+      // CSV: una riga di intestazione + righe di dati (stesse colonne dell'export CSV)
+      parsed = { deck: {}, items: csvToItems(raw, areasFor(me.role)[0]), bars: [] };
+    } else parsed = parseAny(typeof raw === 'string' ? JSON.parse(raw) : raw);
   } catch (e: any) {
     return fail(e.message || 'JSON non valido');
   }

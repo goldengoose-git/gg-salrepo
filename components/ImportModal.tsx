@@ -35,17 +35,17 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     </button>
   );
   return (
-    <Modal title="Importa JSON" onClose={onClose} width={780}
-      footer={<><a className="btn" href="/api/export/json"><Ic n="dl" />Esporta JSON attuale</a><span className="sp" />{err && <span className="err">{err}</span>}
+    <Modal title="Importa JSON o CSV" onClose={onClose} width={780}
+      footer={<><a className="btn" href="/api/export/json"><Ic n="dl" />JSON</a><a className="btn" href="/api/export/csv"><Ic n="dl" />CSV</a><a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a><span className="sp" />{err && <span className="err">{err}</span>}
         <button className="btn" onClick={onClose}>Annulla</button><button className="btn pri" disabled={!sum || busy} onClick={run}>{busy ? 'Importo…' : 'Importa'}</button></>}>
       <div className="grid">
         <div className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); readFile(e.dataTransfer.files[0]); }}>
-          <Ic n="up" /><b style={{ color: 'var(--fg)' }}>Trascina qui il file .json</b>
-          <span>Accetta i deck esportati dal tool locale (Golden_Goose_SAL_deck) e gli export di questa app</span>
+          <Ic n="up" /><b style={{ color: 'var(--fg)' }}>Trascina qui il file .json o .csv</b>
+          <span>JSON dal tool locale (Golden_Goose_SAL_deck) o da questa app; CSV con le colonne dell'export CSV (Area, Codice, Type, Descrizione, …)</span>
           <button className="btn" onClick={() => ref.current?.click()}>Scegli file</button>
-          <input ref={ref} type="file" accept=".json,application/json" hidden onChange={(e) => readFile(e.target.files?.[0])} />
+          <input ref={ref} type="file" accept=".json,.csv,application/json,text/csv" hidden onChange={(e) => readFile(e.target.files?.[0])} />
         </div>
-        <div className="f"><label className="lab">Oppure incolla il JSON</label>
+        <div className="f"><label className="lab">Oppure incolla il JSON o il CSV</label>
           <textarea style={{ height: 90, fontFamily: 'ui-monospace,monospace', fontSize: 12 }} value={text} onChange={(e) => check(e.target.value)} /></div>
         {sum && <div className="card" style={{ padding: 14, background: 'var(--bg)' }}>
           <div className="lab" style={{ marginBottom: 8 }}>Nel file</div>
