@@ -1,5 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
-import { BAR_STATUS, STATUS } from './constants';
+import { BAR_STATUS, STATUS, type Status } from './constants';
 import { PRIO, prioKey } from './prio';
 import { buildSlides, PIPE, pipePitch } from './slides';
 import type { AppState } from './types';
@@ -121,7 +121,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       if (logoR) s.addImage(contain(logoR, 11.4, 0.2, 1.5, 0.6));
       if (sl.legend) {
         let lx = 0.5;
-        for (const k of ['ontrack', 'delay', 'blocked', 'onhold'] as const) {
+        for (const k of ['ontrack', 'delay', 'blocked', 'onhold', ...(sl.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]) {
           s.addShape('ellipse', { x: lx, y: 0.78, w: 0.12, h: 0.12, fill: { color: hex(STATUS[k].color) }, line: { type: 'none' } });
           s.addText(STATUS[k].label, { x: lx + 0.17, y: 0.72, w: 1.0, h: 0.25, fontFace: FONT_B, fontSize: 9, color: '555555' });
           lx += 1.25;

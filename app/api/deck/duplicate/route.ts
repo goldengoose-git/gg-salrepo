@@ -21,7 +21,9 @@ export async function POST(req: Request) {
   const id = nd[0].id;
   await q(
     `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, updated_by)
-     select $1, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, $3
+     select $1, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status,
+            case when status = 'completed' then coalesce(archived_at, now()) else archived_at end,
+            case when status = 'completed' then coalesce(closed_at, now()) else closed_at end, $3
      from items where deck_id = $2`,
     [id, cur.id, me.username]
   );

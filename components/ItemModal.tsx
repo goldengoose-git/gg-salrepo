@@ -43,7 +43,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
     try {
       if (item) await api(`/api/items/${item.id}`, 'PATCH', f);
       else await api('/api/items', 'POST', { area, ...f });
-      await reload(); toast((ams ? f.ams_status === 'done' : f.status === 'completed') ? 'Salvato e archiviato' : 'Salvato'); onClose();
+      await reload(); toast((ams ? f.ams_status === 'done' : f.status === 'completed') ? 'Salvato: andrà in Archivio con la prossima settimana' : 'Salvato'); onClose();
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
   async function del() {
@@ -84,7 +84,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           </div>
         </div>
         {L(ams ? 'Opened' : 'Requested date', <input value={f.requested_date} onChange={set('requested_date')} placeholder="gg/mm" />)}
-        {!ams && L('GoLive date', <input value={f.golive_date} onChange={set('golive_date')} placeholder="gg/mm" />)}
+        {L('GoLive date', <input value={f.golive_date} onChange={set('golive_date')} placeholder="gg/mm" />)}
         {!ams && L('Data di rilascio', <input value={f.release_date} onChange={set('release_date')} placeholder="gg/mm" />)}
         {!ams && L('Stima', <div className="est">
           <input type="number" min={0} step={0.5} disabled={est === '-' && f.estimate === '-'} value={est === '-' ? '' : est} placeholder="0" onChange={(e) => setF({ ...f, estimate: e.target.value })} /><b>MD</b>
@@ -132,7 +132,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
               </button>
             ))}
           </div>
-          <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Con Completed la voce passa in Archivio (ripristinabile).</div>
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>Con Completed la voce resta visibile questa settimana e passa in Archivio con "Nuova settimana" (ripristinabile).</div>
         </div>}
       </div>
     </Modal>

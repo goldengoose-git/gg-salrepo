@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useApp } from '@/components/AppShell';
 import ImportModal from '@/components/ImportModal';
+import RestoreModal from '@/components/RestoreModal';
 import ItemTable from '@/components/ItemTable';
 import { Ic } from '@/components/icons';
 
@@ -9,11 +10,13 @@ export default function Azioni() {
   const { me } = useApp();
   const [tab, setTab] = useState<'MC' | 'SC'>(me.role);
   const [imp, setImp] = useState(false);
+  const [rest, setRest] = useState(false);
   return (
     <>
       <div className="top"><h2>Azioni {tab === 'MC' ? 'Marketing Cloud' : 'CRM & Service Cloud'}</h2><span className="sp" />
         <button className="btn" onClick={() => setImp(true)}><Ic n="up" />Importa JSON / CSV</button>
-        <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a></div>
+        <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
+        <button className="btn" onClick={() => setRest(true)}><Ic n="undo" />Ripristina da backup</button></div>
       <div className="body">
         <div className="tabs">
           <button className={'tab' + (tab === 'MC' ? ' on' : '')} onClick={() => setTab('MC')}>Marketing Cloud{me.role === 'MC' ? ' (tue)' : ''}</button>
@@ -22,6 +25,7 @@ export default function Azioni() {
         <ItemTable key={tab} area={tab} prefix={tab} label="azione" />
       </div>
       {imp && <ImportModal onClose={() => setImp(false)} />}
+      {rest && <RestoreModal onClose={() => setRest(false)} />}
     </>
   );
 }

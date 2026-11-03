@@ -1,4 +1,4 @@
-import { BAR_STATUS, STATUS, type BarStatus } from '@/lib/constants';
+import { BAR_STATUS, STATUS, type BarStatus, type Status } from '@/lib/constants';
 import { Prio } from '@/lib/prio';
 import { PIPE, pipePitch, type Slide } from '@/lib/slides';
 import type { Deck } from '@/lib/types';
@@ -47,7 +47,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
         <div className="edge" style={s.theme === 'completed' ? { background: '#7135A8' } : undefined} />
         <div className="ttl">{s.title}{s.part && <span className="part">({s.part})</span>}</div>
         {deck.logo_right_url && <img className="logoR" src={deck.logo_right_url} alt="" />}
-        {s.legend && <div className="legend">{(['ontrack', 'delay', 'blocked', 'onhold'] as const).map((k) => <span key={k}><i style={{ background: STATUS[k].color }} />{STATUS[k].label}</span>)}</div>}
+        {s.legend && <div className="legend">{(['ontrack', 'delay', 'blocked', 'onhold', ...(s.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]).map((k) => <span key={k}><i style={{ background: STATUS[k].color }} />{STATUS[k].label}</span>)}</div>}
         <table>
           <colgroup>{s.columns.map((c, i) => <col key={i} style={{ width: `${(c.w / tot) * 100}%` }} />)}</colgroup>
           <thead><tr>{s.columns.map((c, i) => <th key={i} className={c.align === 'c' ? 'c' : ''}>{c.name}</th>)}</tr></thead>

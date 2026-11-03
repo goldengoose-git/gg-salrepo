@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const done = c.status === 'completed';
     const r = await q<{ id: string }>(
       `insert into items (deck_id, area, position, code, type, description, priority, requested_date, golive_date, release_date, owner, estimate, contract, activity, status, ams_status, archived_at, closed_at, updated_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, ${done ? 'now()' : 'null'}, ${done ? 'now()' : 'null'}, $17) returning id`,
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, null, ${done ? 'now()' : 'null'}, $17) returning id`,
       [deck.id, area, pos[0].m, c.code ?? '', c.type ?? '', c.description ?? '', c.priority ?? '', c.requested_date ?? '', c.golive_date ?? '', c.release_date ?? '',
         c.owner ?? '', c.estimate ?? '', c.contract ?? '', c.activity ?? '', c.status ?? 'ontrack', area === 'AMS' ? (c.ams_status ?? 'new') : null, me.username]
     );

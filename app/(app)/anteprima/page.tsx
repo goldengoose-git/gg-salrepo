@@ -60,7 +60,7 @@ export default function Anteprima() {
         <Modal title="Nuova settimana" onClose={() => setDup(null)} width={460}
           footer={<><span className="sp" /><button className="btn" onClick={() => setDup(null)}>Annulla</button>
             <button className="btn pri" disabled={!isIso(dup.sal_date)} onClick={() => run(async () => { await api('/api/deck/duplicate', 'POST', dup); setDup(null); }, 'Nuova settimana creata')}>Crea</button></>}>
-          <p className="muted" style={{ marginTop: 0, fontSize: 13.5, lineHeight: 1.5 }}>Copia righe attive, timeline e grafica della settimana corrente. Le voci archiviate restano nella settimana precedente.</p>
+          <p className="muted" style={{ marginTop: 0, fontSize: 13.5, lineHeight: 1.5 }}>Copia righe, timeline e grafica della settimana corrente. Le voci Completed/Done di questa settimana passano in Archivio nella nuova settimana.</p>
           <div className="f"><label className="lab">Data del SAL</label><input type="date" value={dup.sal_date} onChange={(e) => setDup({ sal_date: e.target.value })} autoFocus />
             <div className="muted" style={{ fontSize: 12.5, marginTop: 6 }}>{isIso(dup.sal_date) ? <>{dayName(dup.sal_date)} · <b>{weekLabel(dup.sal_date)}</b>: Week e data in cover si calcolano da qui</> : 'Scegli la data'}</div></div>
         </Modal>

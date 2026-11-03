@@ -6,12 +6,14 @@ import { Ic } from '@/components/icons';
 import { areasFor } from '@/lib/constants';
 import { api, download } from '@/lib/client';
 import { Prio } from '@/lib/prio';
+import RestoreModal from '@/components/RestoreModal';
 
 export default function Archivio() {
   const { me, state, reload, toast } = useApp();
   const own = me.role === 'MC' ? (['MC', 'SC', 'AMS'] as const) : (['SC', 'AMS', 'MC'] as const); // prima i sistemi del proprio team
   const [f, setF] = useState<'MC' | 'SC' | 'AMS'>(own[0]);
   const [q, setQ] = useState('');
+  const [rest, setRest] = useState(false);
   const all = state!.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
   const rows = all.filter((i) => i.area === f && (!q || JSON.stringify(Object.values(i)).toLowerCase().includes(q.toLowerCase())));
   return (
@@ -26,6 +28,7 @@ export default function Archivio() {
           } catch (e: any) { toast(e.message); }
         }}><Ic n="up" />Recupera da settimane precedenti</button>
         <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
+        <button className="btn" onClick={() => setRest(true)}><Ic n="undo" />Ripristina da backup</button>
         <button className="btn" onClick={() => download('/api/export/xlsx', 'archivio.xlsx').catch((e) => toast(e.message))}><Ic n="dl" />Esporta XLSX</button></div>
       <div className="body">
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>
@@ -51,6 +54,7 @@ export default function Archivio() {
         </div>
         <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Le voci Done arrivano qui da sole. Nell&apos;export (opzionale) finiscono in pagine &quot;Completed Activities&quot;, 12 per slide, con striscia viola.</div>
       </div>
+      {rest && <RestoreModal onClose={() => setRest(false)} />}
     </>
   );
 }

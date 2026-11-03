@@ -110,14 +110,14 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
     items = items.map((i) => {
       if (i.area !== 'AMS') return i;
       const am: AmsStatus = i.ams_status && AMS_KEYS.includes(i.ams_status) ? i.ams_status : (i.archived || i.status === 'completed' ? 'done' : 'wip');
-      return { ...i, ams_status: am, status: AMS_STATUS[am].status, archived: am === 'done' };
+      return { ...i, ams_status: am, status: AMS_STATUS[am].status, archived: !!i.archived };
     });
     const toRow = (i: ImpItem, position: number) => ({
       area: i.area, position, code: i.code ?? '', type: i.type ?? '', description: i.description ?? '',
       priority: i.priority ?? '', requested_date: i.requested_date ?? '', golive_date: i.golive_date ?? '', release_date: i.release_date ?? '', owner: i.owner ?? '',
       estimate: normEstimate(i.estimate), contract: i.contract ?? '', activity: i.activity ?? '', ams_status: i.area === 'AMS' ? (i.ams_status ?? null) : null,
-      status: i.archived ? (i.status ?? 'completed') : (i.status === 'completed' ? 'ontrack' : i.status ?? 'ontrack'),
-      archived: !!i.archived || i.status === 'completed', closed_at: i.closed_at || null,
+      status: i.status ?? (i.archived ? 'completed' : 'ontrack'),
+      archived: !!i.archived, closed_at: i.closed_at || null,
     });
     if (o.mode === 'merge') {
       const ex = await q<any>('select id, area, code, description from items where deck_id = $1', [o.deckId]);
@@ -132,8 +132,8 @@ export async function applyImport(p: Parsed, o: ImportOpts) {
           `update items t set description = x.description, priority = x.priority, owner = x.owner,
                   requested_date = case when x.requested_date <> '' then x.requested_date else t.requested_date end,
                   ams_status = x.ams_status, status = x.status,
-                  archived_at = case when x.archived then coalesce(t.archived_at, x.closed_at::timestamptz, now()) end,
-                  closed_at = case when x.archived then coalesce(t.closed_at, x.closed_at::timestamptz, now()) end,
+                  archived_at = case when x.ams_status = 'done' then t.archived_at end,
+                  closed_at = case when x.ams_status = 'done' then coalesce(t.closed_at, x.closed_at::timestamptz, now()) end,
                   updated_by = $2, updated_at = now()
            from jsonb_to_recordset($1::jsonb) as x(id uuid, description text, priority text, owner text, requested_date text, ams_status text, status text, archived boolean, closed_at text)
            where t.id = x.id`,

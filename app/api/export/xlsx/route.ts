@@ -29,11 +29,11 @@ export async function GET() {
   const ams = wb.addWorksheet('Ticket AMS');
   ams.columns = [
     { header: 'Ticket', key: 'c', width: 12 }, { header: 'Subject', key: 'd', width: 70 }, { header: 'Priorità', key: 'p', width: 10 },
-    { header: 'Owner', key: 'o', width: 16 }, { header: 'Opened', key: 'r', width: 12 }, { header: 'Status', key: 's', width: 14 },
+    { header: 'Owner', key: 'o', width: 16 }, { header: 'Opened', key: 'r', width: 12 }, { header: 'GoLive', key: 'g', width: 12 }, { header: 'Status', key: 's', width: 20 },
     { header: 'Archiviato', key: 'a', width: 11 },
   ];
   for (const i of st.items.filter((x) => x.area === 'AMS'))
-    ams.addRow({ c: i.code, d: i.description, p: i.priority, o: i.owner, r: i.requested_date, s: i.ams_status ? AMS_STATUS[i.ams_status].label : STATUS[i.status].label, a: i.archived_at ? 'sì' : '' });
+    ams.addRow({ c: i.code, d: i.description, p: i.priority, o: i.owner, r: i.requested_date, g: i.golive_date, s: i.ams_status ? AMS_STATUS[i.ams_status].label : STATUS[i.status].label, a: i.archived_at ? 'sì' : '' });
   head(ams);
   const buf = await wb.xlsx.writeBuffer();
   return new Response(buf as ArrayBuffer, {

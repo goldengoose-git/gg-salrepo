@@ -114,7 +114,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   if (ams.length) {
     const pages = chunk(ams, 18);
     pages.forEach((page, p) => {
-      const worst = SEV.find((s) => page.some((i) => i.status === s)) ?? 'ontrack';
+      const worst = SEV.find((s) => page.some((i) => i.status === s)) ?? (page.every((i) => i.status === 'completed') ? 'completed' : 'ontrack');
       const contract = page.find((i) => i.contract)?.contract ?? '';
       slides.push({
         kind: 'table', theme: 'ams', title: 'Action points & Next Steps – CRM & Service Cloud', part: pages.length > 1 ? `AMS ${p + 1}/${pages.length}` : 'AMS',
@@ -122,7 +122,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
         rows: [{
           status: worst,
           cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, sLabel(worst)],
-          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status) })),
+          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '') })),
         }],
       });
     });

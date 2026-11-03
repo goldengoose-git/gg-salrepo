@@ -48,7 +48,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (c.status) {
     vals.push(c.status); sets.push(`status = $${vals.length}`);
     if (c.ams_status) { vals.push(c.ams_status); sets.push(`ams_status = $${vals.length}`); }
-    if (c.status === 'completed') sets.push('archived_at = coalesce(archived_at, now())', 'closed_at = coalesce(closed_at, now())');
+    // Completed resta nella settimana corrente: va in Archivio solo con "Nuova settimana"
+    if (c.status === 'completed') sets.push('closed_at = coalesce(closed_at, now())');
     else sets.push('archived_at = null', 'closed_at = null');
   }
   if (!sets.length) return fail('Nessuna modifica');
