@@ -80,7 +80,16 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                   <td><b>{ams ? i.code : `${prefix}-${String(n).padStart(2, '0')}`}</b></td>
                   {showType && <td>{i.type}</td>}
                   <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td>{!ams && <td>{i.golive_date}</td>}{!ams && <td>{i.release_date}</td>}
-                  <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td><ItemPill i={i} />{ams && !i.ams_status && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}</td>
+                  <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td onClick={ams && canEdit ? (e) => e.stopPropagation() : undefined}>
+                    {ams && canEdit
+                      ? <select className="amssel" value={i.ams_status ?? 'wip'} aria-label="Stato ticket"
+                          style={{ background: AMS_STATUS[i.ams_status ?? 'wip'].color, color: AMS_STATUS[i.ams_status ?? 'wip'].text }}
+                          onChange={(e) => act(i.id, { ams_status: e.target.value }, e.target.value === 'done' ? 'Ticket Done, spostato in Archivio' : 'Stato aggiornato')}>
+                          {AMS_KEYS.map((k) => <option key={k} value={k} style={{ background: '#fff', color: '#111' }}>{AMS_STATUS[k].label}</option>)}
+                        </select>
+                      : <ItemPill i={i} />}
+                    {ams && !i.ams_status && i.activity && <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{i.activity}</div>}
+                  </td>
                   <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                     {canEdit && <>
                       <button className="ib" title="Su" disabled={n === 1} onClick={() => act(i.id, { move: 'up' })}><Ic n="up" /></button>{' '}
