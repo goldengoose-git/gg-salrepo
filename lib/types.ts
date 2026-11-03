@@ -2,7 +2,7 @@ import type { AmsStatus, Area, BarStatus, Lane, Role, Status } from './constants
 
 export type ColorPair = { color: string; text: string };
 /** Colori personalizzati SOLO per l'interfaccia interna (non per slide, PPTX, PDF). */
-export type UiColors = { status?: Partial<Record<Status, ColorPair>>; ams?: Partial<Record<AmsStatus, ColorPair>>; bar?: Partial<Record<BarStatus, ColorPair>> };
+export type UiColors = { status?: Partial<Record<Status, ColorPair>>; ams?: Partial<Record<AmsStatus, ColorPair>>; bar?: Partial<Record<BarStatus, ColorPair>>; contract?: Partial<Record<'OPEX' | 'CAPEX', ColorPair>> };
 
 export type Deck = {
   id: string; week_label: string; sal_date: string | null; client: string; subtitle: string; date_label: string; year: number;

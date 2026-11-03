@@ -20,14 +20,14 @@ const chunk = <T,>(a: T[], n: number) => {
 const sLabel = (s: Status) => STATUS[s].label;
 
 // ---- paginazione: si forza sempre, quando i dati lo permettono, di avere almeno MIN_ROWS righe per slide ----
-// Tre livelli di densita: 0 normale (max 12 righe), 1 compatto (14 righe, footer ridotto), 2 extra-compatto (20 righe, footer minimo).
+// Tre livelli di densita (0 normale, 1 compatto con footer ridotto, 2 extra-compatto con footer minimo), sempre con un massimo di 12 righe per slide.
 // Vince il livello piu leggibile che non lascia slide (tranne l'ultima) sotto le 10 righe; le righe sono ripartite in modo uniforme.
 export type Tier = 0 | 1 | 2;
 const TABLE_W = 1190, MIN_ROWS = 10;
 export const TIERS = [
   { cap: MAX_ROWS, body: 536, charW: 6.4, lh: 16, pad: 14, min: 44, padX: 16 },
-  { cap: 14, body: 556, charW: 5.6, lh: 13, pad: 8, min: 30, padX: 14 },
-  { cap: 20, body: 568, charW: 5.1, lh: 12, pad: 5, min: 24, padX: 12 },
+  { cap: MAX_ROWS, body: 556, charW: 5.6, lh: 13, pad: 8, min: 30, padX: 14 },
+  { cap: MAX_ROWS, body: 568, charW: 5.1, lh: 12, pad: 5, min: 24, padX: 12 },
 ] as const;
 function estRowH(columns: Col[], cells: string[], tier: Tier = 0) {
   const T = TIERS[tier];

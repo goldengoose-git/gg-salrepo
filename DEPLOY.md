@@ -6,10 +6,10 @@ Questa release contiene anche la regola "Completed resta nella week" già pronta
 - **Admin All**: utente con login nascosto (`/accesso-riservato`, nessun link dall'app), vede e scrive tutto (MC, SC, AMS, timeline, elenchi). Sessione 8 ore, limite 5 tentativi falliti ogni 15 minuti.
 - **Ticket AMS › Importa CSV Jira**: anteprima, mappatura Jira, aggiornamento per codice, Done nuovi in Archivio (opzionale), backup JSON automatico prima dell'import. Visibile a SC e Admin All.
 - **Admin › Backup e ripristino**: Scarica JSON, Scarica XLS (tutte le settimane), Esegui backup DB (tutte le tabelle, .json.gz, in streaming).
-- **Admin › Colori ed Elenchi**: colori label **solo interfaccia interna** (slide, PPTX e PDF invariati); modifica Type MC, Type SC, Owner, Contract con rinomina/unione su **tutte le settimane**.
+- **Admin › Colori ed Elenchi**: colori label (stati, AMS, timeline, **OPEX/CAPEX**) **solo interfaccia interna** (slide, PPTX e PDF invariati); modifica Type MC, Type SC, Owner, Contract con rinomina/unione su **tutte le settimane**.
 - **Admin › Normalizza date**: solo **settimana corrente**; Sept→Sep, June→Jun, Beginning→Beg…; regole personalizzate, anteprima, annulla ultima normalizzazione.
 - **Barra laterale**: la sezione corrente è evidenziata (sfondo, barra rossa a sinistra, grassetto, `aria-current`).
-- **Slide**: si punta ad almeno 10 righe per slide; se servono, la tabella si compatta (font e margini più piccoli, fino a 14 righe) e le righe sono ripartite in modo uniforme. Vale per anteprima, PDF e PPTX.
+- **Slide**: si punta ad almeno 10 righe per slide; massimo 12 righe per slide; se servono per arrivare a 10, la tabella si compatta (font, margini e footer più piccoli) e le righe sono ripartite in modo uniforme. Il logo destro non compare più sulle slide tabella. Vale per anteprima, PDF e PPTX.
 - **scripts/weekly-check.mjs**: scarica i backup e verifica la coerenza (vedi sotto).
 
 ## Prima di iniziare

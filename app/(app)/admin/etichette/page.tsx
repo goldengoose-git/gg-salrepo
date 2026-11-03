@@ -6,9 +6,9 @@ import { AMS_KEYS, AMS_STATUS, BAR_STATUS, STATUS, STATUS_KEYS, type BarStatus }
 import { api } from '@/lib/client';
 import { KINDS } from '@/lib/lookups';
 import type { ColorPair, UiColors } from '@/lib/types';
-import { contrast, uiAms, uiBar, uiStatus } from '@/lib/ui-colors';
+import { CONTRACT_DEFAULT, CONTRACT_KEYS, contrast, uiAms, uiBar, uiContract, uiStatus } from '@/lib/ui-colors';
 
-type Row = { group: 'status' | 'ams' | 'bar'; key: string; label: string; def: ColorPair; cur: ColorPair };
+type Row = { group: 'status' | 'ams' | 'bar' | 'contract'; key: string; label: string; def: ColorPair; cur: ColorPair };
 
 export default function AdminEtichette() {
   const { state, reload, toast } = useApp();
@@ -19,8 +19,9 @@ export default function AdminEtichette() {
     ...STATUS_KEYS.map((k) => ({ group: 'status' as const, key: k, label: STATUS[k].label, def: { color: STATUS[k].color, text: STATUS[k].text }, cur: uiStatus(draft, k) })),
     ...AMS_KEYS.map((k) => ({ group: 'ams' as const, key: k, label: AMS_STATUS[k].label, def: { color: AMS_STATUS[k].color, text: AMS_STATUS[k].text }, cur: uiAms(draft, k) })),
     ...(Object.keys(BAR_STATUS) as BarStatus[]).map((k) => ({ group: 'bar' as const, key: k, label: BAR_STATUS[k].label, def: { color: BAR_STATUS[k].color, text: BAR_STATUS[k].text }, cur: uiBar(draft, k) })),
+    ...CONTRACT_KEYS.map((k) => ({ group: 'contract' as const, key: k, label: k, def: CONTRACT_DEFAULT[k], cur: uiContract(draft, k) })),
   ], [draft]);
-  const GROUPS = { status: 'Activity status · MC e SC', ams: 'Ticket AMS · stati Jira', bar: 'Timeline · barre' } as const;
+  const GROUPS = { status: 'Activity status · MC e SC', ams: 'Ticket AMS · stati Jira', bar: 'Timeline · barre', contract: 'Contract · OPEX / CAPEX' } as const;
 
   function set(r: Row, patch: Partial<ColorPair>) {
     const next: any = { ...draft, [r.group]: { ...(draft as any)[r.group] } };
@@ -48,8 +49,8 @@ export default function AdminEtichette() {
             <button className="btn" disabled={busy} onClick={() => { if (confirm('Ripristinare tutti i colori predefiniti?')) { setDraft({}); save({}); } }}>Ripristina predefiniti</button>
             <button className="btn pri" disabled={busy || !dirty} onClick={() => save(draft)}>Salva colori</button>
           </div>
-          <div className="muted" style={{ fontSize: 12.5, marginBottom: 12 }}>Valgono solo per l&apos;interfaccia interna (tabelle, modali, timeline). Slide, anteprima, PDF e PPTX mantengono i colori originali.</div>
-          {(['status', 'ams', 'bar'] as const).map((g) => (
+          <div className="muted" style={{ fontSize: 12.5, marginBottom: 12 }}>Valgono solo per l&apos;interfaccia interna (tabelle, modali, timeline, etichette OPEX/CAPEX). Slide, anteprima, PDF e PPTX mantengono i colori originali.</div>
+          {(['status', 'ams', 'bar', 'contract'] as const).map((g) => (
             <div key={g} style={{ marginBottom: 14 }}>
               <div className="lab" style={{ margin: '8px 0 6px' }}>{GROUPS[g]}</div>
               {rows.filter((r) => r.group === g).map((r) => {

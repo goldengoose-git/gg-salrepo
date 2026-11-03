@@ -7,7 +7,7 @@ import { useApp } from './AppShell';
 import Modal from './Modal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
-import { uiAms, uiStatus } from '@/lib/ui-colors';
+import { uiAms, uiContract, uiStatus } from '@/lib/ui-colors';
 import { joinContract, joinOwners, normEstimate, parseContract, parseOwners } from '@/lib/lookups';
 
 const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', release_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status, ams_status: 'new' as AmsStatus };
@@ -94,7 +94,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
         <div className="f" style={{ gridColumn: 'span 2' }}>
           <label className="lab">Contract type e status</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {(['OPEX', 'CAPEX'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k.toLowerCase() + (cc.type === k ? ' sel' : '')} style={{ border: 0, flex: 'none', height: 32, padding: '0 14px' }} onClick={() => setContract(cc.type === k ? '' : k, cc.label)}>{k}</button>)}
+            {(['OPEX', 'CAPEX'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k.toLowerCase() + (cc.type === k ? ' sel' : '')} style={{ border: 0, flex: 'none', height: 32, padding: '0 14px', background: uiContract(state?.uiColors, k).color, color: uiContract(state?.uiColors, k).text }} onClick={() => setContract(cc.type === k ? '' : k, cc.label)}>{k}</button>)}
             <select style={{ flex: 1, minWidth: 180 }} value={custom ? '__custom' : cc.label} onChange={(e) => {
               if (e.target.value === '__custom') { setCustom(true); return; }
               setCustom(false); setContract(cc.type, e.target.value);

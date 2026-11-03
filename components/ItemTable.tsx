@@ -9,13 +9,15 @@ import ItemModal from './ItemModal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
 import { fmtEstimate, parseContract } from '@/lib/lookups';
-import { uiAms } from '@/lib/ui-colors';
+import { uiAms, uiContract } from '@/lib/ui-colors';
 
 export function ContractPill({ v }: { v: string }) {
+  const { state } = useApp();
   const c = parseContract(v);
+  const col = c.type ? uiContract(state?.uiColors, c.type) : null;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-      {c.type && <span className={'pill cx-' + c.type.toLowerCase()}>{c.type}</span>}
+      {c.type && col && <span className={'pill cx-' + c.type.toLowerCase()} style={{ background: col.color, color: col.text }}>{c.type}</span>}
       {c.label && <span>{c.label}</span>}
     </span>
   );

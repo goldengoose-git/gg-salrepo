@@ -8,6 +8,14 @@ export const uiStatus = (u: UiColors | undefined, s: Status): ColorPair => ({ co
 export const uiAms = (u: UiColors | undefined, s: AmsStatus): ColorPair => ({ color: u?.ams?.[s]?.color ?? AMS_STATUS[s].color, text: u?.ams?.[s]?.text ?? AMS_STATUS[s].text });
 export const uiBar = (u: UiColors | undefined, s: BarStatus): ColorPair => ({ color: u?.bar?.[s]?.color ?? BAR_STATUS[s].color, text: u?.bar?.[s]?.text ?? BAR_STATUS[s].text });
 
+export const CONTRACT_KEYS = ['OPEX', 'CAPEX'] as const;
+export type ContractKey = (typeof CONTRACT_KEYS)[number];
+export const CONTRACT_DEFAULT: Record<ContractKey, ColorPair> = {
+  OPEX: { color: '#D6E7FC', text: '#1F5FBF' },
+  CAPEX: { color: '#EBDDF9', text: '#7A2FC0' },
+};
+export const uiContract = (u: UiColors | undefined, k: ContractKey): ColorPair => ({ color: u?.contract?.[k]?.color ?? CONTRACT_DEFAULT[k].color, text: u?.contract?.[k]?.text ?? CONTRACT_DEFAULT[k].text });
+
 /** Tiene solo chiavi note e colori esadecimali #RRGGBB; scarta il resto. */
 export function sanitizeColors(input: any): UiColors {
   const out: UiColors = {};
@@ -25,6 +33,8 @@ export function sanitizeColors(input: any): UiColors {
   if (Object.keys(s).length) out.status = s;
   if (Object.keys(a).length) out.ams = a;
   if (Object.keys(b).length) out.bar = b;
+  const c = pick(input?.contract, [...CONTRACT_KEYS]);
+  if (Object.keys(c).length) out.contract = c;
   return out;
 }
 
