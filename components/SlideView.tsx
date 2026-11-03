@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { BAR_STATUS, STATUS, type BarStatus, type Status } from '@/lib/constants';
 import { Prio } from '@/lib/prio';
-import { PIPE, pipePitch, TIERS, type Slide } from '@/lib/slides';
+import { FIT_FULL, PIPE, pipePitch, TIERS, type Slide } from '@/lib/slides';
 import type { Deck } from '@/lib/types';
 
 const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -43,7 +43,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
   if (s.kind === 'table') {
     const tot = s.columns.reduce((a, c) => a + c.w, 0);
     return (
-      <div className={'slide' + (s.theme !== 'ams' ? ' fit' : '')} style={s.theme !== 'ams' ? ({ '--fs': `${TIERS[s.tier ?? 0].font}px` } as CSSProperties) : undefined}>
+      <div className={'slide' + (s.theme !== 'ams' ? ' fit' + (s.rows.length < FIT_FULL ? ' short' : '') : '')} style={s.theme !== 'ams' ? ({ '--fs': `${TIERS[s.tier ?? 0].font}px` } as CSSProperties) : undefined}>
         {deck.bg_table_url && <div className="bgimg" style={{ backgroundImage: `url(${deck.bg_table_url})` }} />}
         <div className="edge" style={s.theme === 'completed' ? { background: '#7135A8' } : undefined} />
         <div className="ttl">{s.title}{s.part && <span className="part">({s.part})</span>}</div>

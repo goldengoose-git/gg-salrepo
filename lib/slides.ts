@@ -25,7 +25,9 @@ const sLabel = (s: Status) => STATUS[s].label;
 // dalla precedente finche questa resta >= 11.
 export type Tier = 0 | 1 | 2;
 const TABLE_W = 1190, MIN_ROWS = 11, MIN_LAST = 5;
-export const FIT_H = 586; // altezza della tabella (intestazione inclusa) nelle slide a righe distribuite
+export const FIT_H = 586;
+export const FIT_FULL = 11; // da 11 righe in su la slide e "piena": righe distribuite fino al footer; sotto, altezza riga fissa (come sulle slide piene)
+export const FIT_ROW = 45; // altezza della tabella (intestazione inclusa) nelle slide a righe distribuite
 export const TIERS = [
   { cap: MAX_ROWS, font: 12.5, body: 538, charW: 5.5, lh: 15.6, pad: 6, min: 28, padX: 18 },
   { cap: MAX_ROWS, font: 11.5, body: 538, charW: 5.1, lh: 14.4, pad: 6, min: 28, padX: 18 },

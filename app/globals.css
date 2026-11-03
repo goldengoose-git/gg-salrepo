@@ -108,6 +108,8 @@ tr.drop-after td{box-shadow:inset 0 -2px 0 #E0301E}
 .slide.fit th{font-size:calc(var(--fs) - .5px);padding:4px 5px;height:28px}
 .slide.fit td{font-size:var(--fs);line-height:1.25;padding:2px 8px;height:28px}
 .slide.fit td.idc{font-size:calc(var(--fs) + 1.5px)}
+.slide.fit.short table{height:auto}
+.slide.fit.short td{height:45px}
 .slide.fit .foot{height:26px;font-size:11px;border-top-width:1.5px}
 .slide td.idc{text-align:center;font:800 14px 'Montserrat'}
 .slide td.act{text-align:center;font-weight:500}

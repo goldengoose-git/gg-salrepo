@@ -1,7 +1,7 @@
 import PptxGenJS from 'pptxgenjs';
 import { BAR_STATUS, STATUS, type Status } from './constants';
 import { PRIO, prioKey } from './prio';
-import { buildSlides, FIT_H, PIPE, pipePitch } from './slides';
+import { buildSlides, FIT_FULL, FIT_H, FIT_ROW, PIPE, pipePitch } from './slides';
 import type { AppState } from './types';
 
 const PX = 13.333 / 1280; // 1 px slide -> pollici
@@ -178,7 +178,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
         })
       );
       // righe distribuite fino a poco sopra il footer (come l'anteprima): intestazione 34 px, il resto diviso per le righe
-      const rowH = !fit ? undefined : [px(34), ...sl.rows.map(() => px((FIT_H - 34) / Math.max(1, sl.rows.length)))];
+      const rowH = !fit ? undefined : [px(34), ...sl.rows.map(() => px(sl.rows.length >= FIT_FULL ? (FIT_H - 34) / sl.rows.length : FIT_ROW))];
       s.addTable([header, ...body] as any, { x: px(46), y: px(fit ? 94 : 100), w: W, colW, rowH: rowH as any, margin: [0.03, 0.08, 0.03, 0.08] });
       footer(s, fit ? 1 : 0);
     } else if (sl.kind === 'pipeline') {
