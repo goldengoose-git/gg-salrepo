@@ -42,11 +42,10 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
   if (s.kind === 'table') {
     const tot = s.columns.reduce((a, c) => a + c.w, 0);
     return (
-      <div className={'slide' + (s.dense ? ' dense' : '')}>
+      <div className={'slide' + (s.tier ? ' dense' : '') + (s.tier === 2 ? ' ultra' : '')}>
         {deck.bg_table_url && <div className="bgimg" style={{ backgroundImage: `url(${deck.bg_table_url})` }} />}
         <div className="edge" style={s.theme === 'completed' ? { background: '#7135A8' } : undefined} />
         <div className="ttl">{s.title}{s.part && <span className="part">({s.part})</span>}</div>
-        {deck.logo_right_url && <img className="logoR" src={deck.logo_right_url} alt="" />}
         {s.legend && <div className="legend">{(['ontrack', 'delay', 'blocked', 'onhold', ...(s.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]).map((k) => <span key={k}><i style={{ background: STATUS[k].color }} />{STATUS[k].label}</span>)}</div>}
         <table>
           <colgroup>{s.columns.map((c, i) => <col key={i} style={{ width: `${(c.w / tot) * 100}%` }} />)}</colgroup>

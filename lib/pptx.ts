@@ -94,10 +94,12 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
   };
 
   let pageNo = 0;
-  const footer = (s: PptxGenJS.Slide, _sl: unknown) => {
-    s.addShape('line', { x: px(46), y: 7.5 - px(34), w: px(1200), h: 0, line: { color: '111111', width: 1.5 } });
-    s.addText(`${d.subtitle} · ${d.date_label}`, { x: px(46), y: 7.5 - px(32), w: 8, h: px(30), fontFace: FONT_B, fontSize: 10, bold: true, color: '777777', margin: 0, valign: 'middle' });
-    s.addText(String(pageNo), { x: px(1246) - 1, y: 7.5 - px(32), w: 1, h: px(30), fontFace: FONT_B, fontSize: 10, bold: true, color: '777777', margin: 0, valign: 'middle', align: 'right' });
+  const FOOT_H = [34, 26, 20], FOOT_PT = [10, 8.5, 7.5], BODY_PT = [8.5, 7.5, 6.8], ROW_PX = [44, 30, 24], TOP_PX = [100, 94, 92];
+  const footer = (s: PptxGenJS.Slide, t: number) => {
+    const fh = FOOT_H[t], fs = FOOT_PT[t];
+    s.addShape('line', { x: px(46), y: 7.5 - px(fh), w: px(1200), h: 0, line: { color: '111111', width: t ? 1 : 1.5 } });
+    s.addText(`${d.subtitle} · ${d.date_label}`, { x: px(46), y: 7.5 - px(fh - 2), w: 8, h: px(fh - 4), fontFace: FONT_B, fontSize: fs, bold: true, color: '777777', margin: 0, valign: 'middle' });
+    s.addText(String(pageNo), { x: px(1246) - 1, y: 7.5 - px(fh - 2), w: 1, h: px(fh - 4), fontFace: FONT_B, fontSize: fs, bold: true, color: '777777', margin: 0, valign: 'middle', align: 'right' });
   };
   for (const sl of slides) {
     const s = pres.addSlide();
@@ -114,11 +116,11 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       s.addText(sl.kind === 'section' ? sl.title : 'Thank you', { x: 0.8, y: 3.0, w: 11.5, h: 1.2, fontFace: FONT_T, fontSize: 40, bold: true, color: 'FFFFFF' });
       if (logoL && sl.kind === 'closing') s.addImage(contain(logoL, 0.8, 5.6, 2.0, 0.8));
     } else if (sl.kind === 'table') {
+      const tier = sl.tier ?? 0;
       s.background = { color: 'FFFFFF' };
       if (bgTab) s.addImage({ data: bgTab.data, x: 0, y: 0, w: 13.333, h: 7.5 });
       s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: sl.theme === 'completed' ? '7135A8' : 'E0301E' }, line: { type: 'none' } });
       s.addText(clean(sl.title) + (sl.part ? `  (${sl.part})` : ''), { x: 0.5, y: 0.2, w: 9, h: 0.5, fontFace: FONT_T, fontSize: 20, bold: true, color: '2C2D2C' });
-      if (logoR) s.addImage(contain(logoR, 11.4, 0.2, 1.5, 0.6));
       if (sl.legend) {
         let lx = 0.5;
         for (const k of ['ontrack', 'delay', 'blocked', 'onhold', ...(sl.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]) {
@@ -134,7 +136,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       const accent = sl.theme === 'completed' ? '7135A8' : 'E0301E';
       const header = sl.columns.map((c) => ({
         text: c.name,
-        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: sl.dense ? 7.5 : 8.5, align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
+        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: BODY_PT[tier], align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
           border: [white, white, { type: 'solid' as const, pt: 2.25, color: accent }, white] },
       }));
       // testo con "(next step: …)" in grassetto, **x** in grassetto
@@ -151,7 +153,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
         r.cells.map((t, ci) => {
           const col = sl.columns[ci];
           const zebra = ri % 2 === 1 ? 'F4F4F4' : 'FFFFFF';
-          const base: any = { fontFace: FONT_B, fontSize: sl.dense ? 7.5 : 8.5, valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
+          const base: any = { fontFace: FONT_B, fontSize: BODY_PT[tier], valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
           if (ci === 0 && r.status) {
             const st = STATUS[r.status];
             return { text: clean(t), options: { ...base, fontFace: FONT_T, bold: true, fontSize: 10, align: 'center', color: hex(st.ink), fill: { color: hex(st.tint) },
@@ -170,11 +172,11 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
             if (k) return { text: [{ text: PRIO[k].glyph + ' ', options: { color: hex(PRIO[k].c), bold: true, fontSize: 11 } }, { text: t, options: { color: '2C2D2C' } }], options: base };
           }
           if (ci === sl.statusCol) return { text: clean(t), options: { ...base, align: 'center' } };
-          return { text: runs(t, sl.dense ? 7.5 : 8.5), options: base };
+          return { text: runs(t, BODY_PT[tier]), options: base };
         })
       );
-      s.addTable([header, ...body] as any, { x: px(46), y: px(100), w: W, colW, rowH: sl.theme === 'ams' ? undefined : px(sl.dense ? 30 : 44), margin: [0.03, 0.08, 0.03, 0.08] });
-      footer(s, sl);
+      s.addTable([header, ...body] as any, { x: px(46), y: px(TOP_PX[tier]), w: W, colW, rowH: sl.theme === 'ams' ? undefined : px(ROW_PX[tier]), margin: [0.03, 0.08, 0.03, 0.08] });
+      footer(s, tier);
     } else if (sl.kind === 'pipeline') {
       s.background = { color: 'FFFFFF' };
       s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: 'E0301E' }, line: { type: 'none' } });
@@ -217,7 +219,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       s.addShape('line', { x: tx, y: top - px(6), w: 0, h: bottom - top + px(6), line: { color: 'E0301E', width: 1.5 } });
       s.addShape('ellipse', { x: tx - px(5), y: px(88), w: px(10), h: px(10), fill: { color: 'E0301E' }, line: { type: 'none' } });
       s.addText('Today', { x: tx + px(9), y: px(82), w: 0.7, h: 0.22, fontFace: FONT_B, fontSize: 9.5, bold: true, color: 'E0301E', margin: 0, valign: 'middle' });
-      footer(s, sl);
+      footer(s, 0);
     }
   }
   const out = await pres.write({ outputType: 'nodebuffer' });
