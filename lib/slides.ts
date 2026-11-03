@@ -9,7 +9,7 @@ export type Slide =
   | { kind: 'cover' }
   | { kind: 'section'; title: string }
   | { kind: 'closing' }
-  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; tier?: 0 | 1 }
+  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; tier?: 0 | 1 | 2 }
   | { kind: 'pipeline'; title: string; part: string; year: number; today: number; lanes: PLane[] };
 
 const chunk = <T,>(a: T[], n: number) => {
@@ -20,13 +20,16 @@ const chunk = <T,>(a: T[], n: number) => {
 const sLabel = (s: Status) => STATUS[s].label;
 
 // ---- paginazione: si contano tutte le voci e si riempiono le slide fino a 12 righe (almeno 11 quando i dati lo permettono) ----
-// Due livelli di densita: 0 normale (font 12,5 px), 1 compatto (font 11 px, footer ridotto). Il corpo non scende mai sotto 11 px.
-// L'ultima slide non resta con poche righe: si riportano righe dalla precedente finche questa resta >= 11.
-export type Tier = 0 | 1;
+// Tre livelli di corpo: 12,5 px (preferito), 11,5 px, 11 px (minimo). Si sceglie il piu grande che tiene le righe sulla slide;
+// poi la tabella viene distribuita fino a poco sopra il footer. L'ultima slide non resta con poche righe: si riportano righe
+// dalla precedente finche questa resta >= 11.
+export type Tier = 0 | 1 | 2;
 const TABLE_W = 1190, MIN_ROWS = 11, MIN_LAST = 5;
+export const FIT_H = 586; // altezza della tabella (intestazione inclusa) nelle slide a righe distribuite
 export const TIERS = [
-  { cap: MAX_ROWS, body: 536, charW: 6.4, lh: 16, pad: 14, min: 44, padX: 16 },
-  { cap: MAX_ROWS, body: 556, charW: 5.6, lh: 13.5, pad: 8, min: 30, padX: 14 },
+  { cap: MAX_ROWS, font: 12.5, body: 538, charW: 5.5, lh: 15.6, pad: 6, min: 28, padX: 18 },
+  { cap: MAX_ROWS, font: 11.5, body: 538, charW: 5.1, lh: 14.4, pad: 6, min: 28, padX: 18 },
+  { cap: MAX_ROWS, font: 11, body: 538, charW: 4.95, lh: 13.8, pad: 6, min: 28, padX: 18 },
 ] as const;
 function estRowH(columns: Col[], cells: string[], tier: Tier = 0) {
   const T = TIERS[tier];
@@ -35,7 +38,7 @@ function estRowH(columns: Col[], cells: string[], tier: Tier = 0) {
   cells.forEach((t, i) => {
     const px = (columns[i].w / tot) * TABLE_W - T.padX;
     const cpl = Math.max(4, Math.floor(px / T.charW));
-    const l = String(t ?? '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
+    const l = String(t ?? '').replace(/\*\*/g, '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
     if (l > lines) lines = l;
   });
   return Math.max(T.min, lines * T.lh + T.pad);
@@ -53,7 +56,7 @@ function paginate<T>(items: T[], heightOf: (x: T) => number, tier: Tier = 0, cap
   return pages;
 }
 function paginateSmart<T>(items: T[], heightOf: (x: T, tier: Tier) => number): { pages: T[][]; tier: Tier } {
-  const cand = ([0, 1] as Tier[]).map((tier) => {
+  const cand = ([0, 1, 2] as Tier[]).map((tier) => {
     const h = (x: T) => heightOf(x, tier);
     const pages = paginate(items, h, tier);
     // l'ultima slide non deve restare con poche righe: si spostano righe dalla precedente (che resta >= MIN_ROWS)

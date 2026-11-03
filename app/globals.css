@@ -104,11 +104,11 @@ tr.drop-after td{box-shadow:inset 0 -2px 0 #E0301E}
 .slide td{color:#2C2D2C;padding:4px 8px;border:2px solid #fff;height:44px;line-height:1.28;overflow:hidden;vertical-align:middle}
 .slide tbody tr:nth-child(even) td{background:#F4F4F4}
 .slide td.c,.slide th.c{text-align:center}
-.slide.dense table{font-size:11px;top:94px}
-.slide.dense th{font-size:10.5px;padding:4px 5px;height:28px}
-.slide.dense td{padding:2px 7px;height:30px;line-height:1.2}
-.slide.dense td.idc{font-size:12.5px}
-.slide.dense .foot{height:26px;font-size:11px;border-top-width:1.5px}
+.slide.fit table{top:94px;height:586px;font-size:var(--fs)}
+.slide.fit th{font-size:calc(var(--fs) - .5px);padding:4px 5px;height:28px}
+.slide.fit td{font-size:var(--fs);line-height:1.25;padding:2px 8px;height:28px}
+.slide.fit td.idc{font-size:calc(var(--fs) + 1.5px)}
+.slide.fit .foot{height:26px;font-size:11px;border-top-width:1.5px}
 .slide td.idc{text-align:center;font:800 14px 'Montserrat'}
 .slide td.act{text-align:center;font-weight:500}
 .slide .foot{position:absolute;left:46px;right:34px;bottom:0;height:34px;border-top:2px solid #111;display:flex;align-items:center;justify-content:space-between;font:600 14px 'Outfit';color:#777}
