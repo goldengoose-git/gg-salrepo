@@ -58,7 +58,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
                 if (ci === 0 && st && !r.ams)
                   return <td key={ci} className={s.theme === 'completed' ? 'c' : 'idc'} style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, fontWeight: 800 }}>{t}</td>;
                 if (ci === 0 && st)
-                  return <td key={ci} className="idc" style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, verticalAlign: 'top', paddingTop: 12 }}>{t}</td>;
+                  return <td key={ci} className="idc" style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, verticalAlign: 'middle' }}>{t}</td>;
                 if (r.ams && ci === 1)
                   return (
                     <td key={ci} className="amscell">

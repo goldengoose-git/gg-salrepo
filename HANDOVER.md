@@ -48,3 +48,4 @@ Dettagli tecnici e regole dati: `HANDOVER.json`, `DEPLOY.md`.
 - **Completed Activities** (anteprima, PDF, PPTX, Presenta): solo voci archiviate con `closed_at` negli ultimi 14 gg (MC) / 7 gg (SC, AMS) dalla data SAL; le Completed della settimana corrente restano nelle tabelle. Presenta le include di default (`?archive=0` le esclude); toggle export acceso di default.
 - Import Jira: `closed_at` da *Resolved* (fallback *Updated*).
 - v12b: banda in alto con ambiente (Produzione/Preview/Locale), branch git e commit (variabili Vercel), endpoint DB Neon (solo Admin; etichetta facoltativa `SAL_DB_LABEL`), utente e orario di login (`iat` del JWT).
+- v12c: ID del blocco AMS centrato verticalmente (anteprima e PPTX); Archivio › "PDF completati 14 gg" (`/print/completati?days=14`, `GET /api/completed`): voci completate negli ultimi N giorni da tutte le settimane, raggruppate MC/SC/AMS.

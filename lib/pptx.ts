@@ -170,7 +170,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
           if (ci === 0 && r.status) {
             const st = STATUS[r.status];
             return { text: clean(t), options: { ...base, fontFace: FONT_XB, fontSize: BODY + 1.125, align: 'center', color: hex(st.ink), fill: { color: hex(st.tint) },
-              border: [white, white, white, { type: 'solid' as const, pt: 5, color: hex(st.stripe) }], valign: r.ams ? 'top' : 'middle' } };
+              border: [white, white, white, { type: 'solid' as const, pt: 5, color: hex(st.stripe) }], valign: 'middle' } };
           }
           if (r.ams && ci === 1) {
             const rr: any[] = [{ text: clean(t), options: { fontFace: FONT_BB, fontSize: 14 * PT, breakLine: true } }, { text: ' ', options: { fontSize: 4, breakLine: true } }];
