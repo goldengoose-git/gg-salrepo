@@ -10,6 +10,7 @@ Questa release contiene anche la regola "Completed resta nella week" già pronta
 - **Admin › Normalizza date**: solo **settimana corrente**; Sept→Sep, June→Jun, Beginning→Beg…; regole personalizzate, anteprima, annulla ultima normalizzazione.
 - **Barra laterale**: la sezione corrente è evidenziata (sfondo, barra rossa a sinistra, grassetto, `aria-current`).
 - **Slide**: massimo 12 righe per slide, almeno 11 sulle slide piene. Corpo 12,5 px (scende a 11,5 o 11 px solo se le voci sono lunghe, mai sotto 11), righe distribuite fino a poco sopra il footer (ridotto) sulle slide piene (11-12 righe); le slide con meno righe mantengono la stessa altezza riga, senza ingrandire. Il logo destro non compare più sulle slide tabella. Vale per anteprima, PDF e PPTX (corpo 9,25-8,25 pt).
+- **Presenta** (Anteprima › Presenta, o clic su una miniatura per partire da quella slide): presentazione a schermo intero per tutti gli utenti. Frecce/spazio/clic per scorrere, **F** schermo intero, **G** griglia di tutte le slide, **B** schermo nero, **Esc** esce; il cursore diventa un punto rosso. Stesse slide dell'anteprima (incluse le Completed), sempre aggiornate.
 - **scripts/weekly-check.mjs**: scarica i backup e verifica la coerenza (vedi sotto).
 
 ## Prima di iniziare

@@ -98,7 +98,8 @@
     "Admin All: colori anche per OPEX/CAPEX (settings.ui_colors.contract), solo UI interna",
     "Slide tabella (MC, SC, Completed): max 12 righe, almeno 11 sulle slide piene, corpo 12,5 px (11,5 / 11 se le voci sono lunghe, mai sotto 11), righe distribuite fino al footer ridotto sulle slide piene (>=11 righe); sotto 11 righe altezza riga fissa 45 px. Logo destro non piu sulle slide tabella. PPTX: 9,25/8,5/8,25 pt, stesse regole. AMS invariato",
     "Slide AMS: Activity Status = OnGoing per tutti gli stati tranne Done (Done solo se tutti i ticket del blocco sono completed); colore riga invariato",
-    "PPTX: tutto in Montserrat (Regular/SemiBold/Bold/ExtraBold), misure px*0,75 pt come anteprima/PDF; font da installare dalla cartella fonts/ (OFL)"
+    "PPTX: tutto in Montserrat (Regular/SemiBold/Bold/ExtraBold), misure px*0,75 pt come anteprima/PDF; font da installare dalla cartella fonts/ (OFL)",
+    "Presenta: /presenta, presentazione a schermo intero per tutti (frecce/spazio/clic, F schermo intero, G griglia, B nero, Esc), cursore punto rosso, ?s=N, ?archive=0"
   ],
   "security": [
     "bcryptjs + JWT cookie sal_session (2 giorni)",

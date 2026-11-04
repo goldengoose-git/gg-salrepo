@@ -10,6 +10,7 @@
 - **Admin › Normalizza date**: solo settimana corrente, annullabile (audit_log).
 - **Sidebar**: sezione corrente evidenziata.
 - **Slide**: max 12 righe, almeno 11 sulle slide piene, corpo 12,5 px (mai sotto 11), righe distribuite fino al footer ridotto (slide con ≥11 righe); sotto 11 righe altezza fissa 45 px; logo destro non più sulle slide tabella. PPTX con le stesse regole.
+- **Presenta** (`/presenta`, `app/presenta/page.tsx`): presentazione a schermo intero, tutti gli utenti, F/G/B/Esc, cursore = punto rosso, `?s=N`, `?archive=0`.
 - `scripts/weekly-check.mjs`: controllo coerenza settimanale.
 
 ## Flusso di test e rilascio

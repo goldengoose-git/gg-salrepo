@@ -31,10 +31,11 @@ export default function Anteprima() {
         <button className="btn" onClick={() => run(() => api('/api/deck/publish', 'POST'), 'Settimana pubblicata (copia salvata nello storico)')}>Pubblica settimana</button>
         <button className="btn" onClick={() => setDup({ sal_date: salNow ? addDays(salNow, 7) : '' })}><Ic n="cp" />Nuova settimana</button>
         <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
+        <a className="btn" href="/presenta" title="Presentazione a schermo intero"><Ic n="pv" />Presenta</a>
         <button className="btn pri" onClick={() => setExp(true)}><Ic n="dl" />Esporta</button></div>
       <div className="body" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,300px)', gap: '18px 20px' }}>
-          {slides.map((s, i) => <div key={i}><Thumb s={s} deck={d} no={i + 1} /><div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{i + 1} · {s.kind === 'table' ? s.title + (s.part ? ` (${s.part})` : '') : s.kind}</div></div>)}
+          {slides.map((s, i) => <div key={i}><a href={`/presenta?s=${i + 1}`} title="Presenta da questa slide" style={{ display: 'block' }}><Thumb s={s} deck={d} no={i + 1} /></a><div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{i + 1} · {s.kind === 'table' ? s.title + (s.part ? ` (${s.part})` : '') : s.kind}</div></div>)}
         </div>
         <div className="card" style={{ padding: 18 }}>
           <div className="lab">Dati cover</div>
