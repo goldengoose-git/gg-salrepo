@@ -54,15 +54,14 @@ export const lanesFor = (r: Role): Lane[] => (r === 'ADMIN' ? ['SFMC', 'CROSS', 
 export type Col = { name: string; w: number; align: 'l' | 'c' };
 export const COLS: Record<'mc' | 'sc' | 'ams' | 'amsblock' | 'completed', Col[]> = {
   mc: [
-    { name: 'ID', w: 5, align: 'c' }, { name: 'Type', w: 8, align: 'c' }, { name: 'Description', w: 24, align: 'l' },
+    { name: 'ID', w: 5, align: 'c' }, { name: 'Type', w: 8, align: 'c' }, { name: 'Description', w: 32, align: 'l' },
     { name: 'Priorità', w: 7, align: 'c' }, { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' },
-    { name: 'Release Date', w: 8, align: 'c' },
     { name: 'Owner', w: 10, align: 'l' }, { name: 'Stima', w: 6, align: 'c' }, { name: 'Contract Type & Status', w: 11, align: 'l' },
     { name: 'Activity Status', w: 10, align: 'c' },
   ],
   sc: [
-    { name: 'ID', w: 5, align: 'c' }, { name: 'Description', w: 29, align: 'l' }, { name: 'Priorità', w: 7, align: 'c' },
-    { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' }, { name: 'Release Date', w: 8, align: 'c' }, { name: 'Owner', w: 10, align: 'l' },
+    { name: 'ID', w: 5, align: 'c' }, { name: 'Description', w: 37, align: 'l' }, { name: 'Priorità', w: 7, align: 'c' },
+    { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' }, { name: 'Owner', w: 10, align: 'l' },
     { name: 'Stima', w: 6, align: 'c' }, { name: 'Contract Type & Status', w: 12, align: 'l' }, { name: 'Activity Status', w: 10, align: 'c' },
   ],
   ams: [

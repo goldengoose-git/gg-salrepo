@@ -120,10 +120,10 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   const slides: Slide[] = [{ kind: 'cover' }, { kind: 'section', title: st.deck.subtitle || 'Status Update' }];
 
   const cellsOf = (theme: 'mc' | 'sc', it: Item, n: string) => {
-    const act = it.activity || sLabel(it.status);
+    const act = it.status === 'completed' ? 'Done' : it.activity || sLabel(it.status); // completed: sempre "Done" (badge in slide)
     return theme === 'mc'
-      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
-      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
+      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
+      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
   };
   const tableSlides = (theme: 'mc' | 'sc', title: string, items: Item[]) => {
     const cols = COLS[theme];
@@ -145,7 +145,18 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   // Ticket AMS: un unico blocco (una sola riga/ID) con l'elenco dei ticket, come nella slide originale
   const ams = active('AMS');
   if (ams.length) {
-    const pages = chunk(ams, 18);
+    // blocco AMS: una sola slide finche i ticket entrano (circa 24 righe), poi pagine bilanciate (mai 1-2 ticket da soli)
+    const tagOf = (i: Item) => (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '');
+    const amsH = (i: Item) => Math.max(1, Math.ceil((`${i.code ? i.code + ' - ' : ''}${i.description} (${tagOf(i)})`).length / 105)) * 19.5;
+    const AMS_BUDGET = 470;
+    const fillPages = (cap: number) => {
+      const out: Item[][] = []; let cur: Item[] = [], acc = 0;
+      for (const it of ams) { const h = amsH(it); if (cur.length && (cur.length >= cap || acc + h > AMS_BUDGET)) { out.push(cur); cur = []; acc = 0; } cur.push(it); acc += h; }
+      if (cur.length) out.push(cur);
+      return out;
+    };
+    let pages = fillPages(26);
+    if (pages.length > 1) { const bal = fillPages(Math.ceil(ams.length / pages.length)); if (bal.length === pages.length) pages = bal; }
     pages.forEach((page, p) => {
       const worst = SEV.find((s) => page.some((i) => i.status === s)) ?? (page.every((i) => i.status === 'completed') ? 'completed' : 'ontrack');
       const contract = page.find((i) => i.contract)?.contract ?? '';
@@ -155,7 +166,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
         rows: [{
           status: worst,
           cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, worst === 'completed' ? 'Done' : 'OnGoing'], // Activity Status AMS: OnGoing per tutti gli stati tranne Done
-          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '') })),
+          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: tagOf(i) })),
         }],
       });
     });

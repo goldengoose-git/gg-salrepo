@@ -184,6 +184,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
             const k = prioKey(t);
             if (k) return { text: [{ text: PRIO[k].glyph + ' ', options: { color: hex(PRIO[k].c), bold: true, fontSize: BODY } }, { text: t, options: { color: '2C2D2C' } }], options: base };
           }
+          if (ci === sl.statusCol && r.status === 'completed') return { text: '✓ Done', options: { ...base, fontFace: FONT_BB, align: 'center', bold: true, color: 'FFFFFF', fill: { color: '7135A8' } } };
           if (ci === sl.statusCol) return { text: clean(t), options: { ...base, fontFace: FONT_MED, align: 'center' } };
           return { text: runs(t, BODY), options: base };
         })

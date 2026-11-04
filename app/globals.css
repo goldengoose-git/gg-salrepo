@@ -174,3 +174,5 @@ tr.drop-after td{box-shadow:inset 0 -2px 0 #E0301E}
 .pres-grid button:focus-visible{outline:2px solid #fff}
 @media (prefers-reduced-motion:reduce){.pres-bar{transition:none}}
 .pres-bar svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.slide .donebadge{display:inline-block;background:#7135A8;color:#fff;font-weight:700;border-radius:999px;padding:1px 11px 2px;letter-spacing:.01em}

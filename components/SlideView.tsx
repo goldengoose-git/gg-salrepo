@@ -67,7 +67,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
                     </td>
                   );
                 if (ci === s.prioCol) return <td key={ci} className="c"><Prio p={t} size={15} /></td>;
-                if (ci === s.statusCol) return <td key={ci} className="act">{t}</td>;
+                if (ci === s.statusCol) return <td key={ci} className="act">{r.status === 'completed' ? <span className="donebadge">✓ Done</span> : t}</td>;
                 return <td key={ci} className={s.columns[ci].align === 'c' ? 'c' : ''} dangerouslySetInnerHTML={rich(t)} />;
               })}</tr>
             );

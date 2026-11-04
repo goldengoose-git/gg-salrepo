@@ -35,3 +35,9 @@ PPTX allineato all'anteprima/PDF (dimensioni px×0,75 pt), tutto in **Montserrat
 Colori solo interfaccia interna; normalizzazione solo settimana corrente; backup Neon manuale a cura di Stefano; Completed resta nella week corrente.
 
 Dettagli tecnici e regole dati: `HANDOVER.json`, `DEPLOY.md`.
+
+## v11 (2026-11-04)
+- Presenta: Completed Activities escluse di default (`?archive=1` per includerle).
+- Campo Rilascio tolto da modale, tabella, slide/PPTX (colonna DB e import/export CSV restano).
+- Righe completate: badge viola "✓ Done" in Activity Status (anteprima, PDF, PPTX).
+- AMS: impaginazione per altezza (una slide finché entrano, poi pagine bilanciate, mai 1-2 ticket orfani); toast Done corretto.
