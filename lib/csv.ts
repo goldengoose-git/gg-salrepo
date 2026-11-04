@@ -99,7 +99,7 @@ export function jiraToItems(rows: string[][]): JiraResult {
   const h = rows[0].map(norm);
   const ix = (...names: string[]) => h.findIndex((x) => names.includes(x));
   const iKey = ix('issuekey'), iSum = ix('summary'), iSt = ix('status'), iPr = ix('priority'), iRep = ix('reporter'), iAss = ix('assignee'),
-    iCr = ix('created'), iUp = ix('updated', 'resolved');
+    iCr = ix('created'), iRes = ix('resolved', 'resolutiondate'), iUp = ix('updated');
   const items: ImpItem[] = [];
   const unknown: Record<string, number> = {};
   for (const r of rows.slice(1)) {
@@ -111,7 +111,8 @@ export function jiraToItems(rows: string[][]): JiraResult {
     const pr = (r[iPr] ?? '').trim();
     const prio = PRIORITIES.find((p) => p.toLowerCase() === pr.toLowerCase()) ?? (/^(critical|blocker)$/i.test(pr) ? 'Highest' : /^(major)$/i.test(pr) ? 'High' : /^(minor)$/i.test(pr) ? 'Low' : pr);
     const created = iCr >= 0 ? parseJiraDate(r[iCr] ?? '') : null;
-    const updated = iUp >= 0 ? parseJiraDate(r[iUp] ?? '') : null;
+    // data di chiusura: Resolved (fissa); se vuota ripiega su Updated
+    const updated = (iRes >= 0 ? parseJiraDate(r[iRes] ?? '') : null) ?? (iUp >= 0 ? parseJiraDate(r[iUp] ?? '') : null);
     items.push({
       area: 'AMS', code, description: (r[iSum] ?? '').trim(), priority: prio,
       owner: ((iAss >= 0 ? r[iAss] : '') || (iRep >= 0 ? r[iRep] : '') || '').trim(),

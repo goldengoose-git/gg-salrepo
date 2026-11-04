@@ -8,7 +8,7 @@ import { buildSlides } from '@/lib/slides';
 import type { AppState } from '@/lib/types';
 
 // Presentazione a schermo intero: stesse slide dell'anteprima/PDF, frecce/spazio per scorrere, F schermo intero, G griglia, B schermo nero,
-// cursore = punto rosso. ?s=N parte dalla slide N (1 = copertina), ?archive=1 include le Completed Activities (di default non vengono presentate).
+// cursore = punto rosso. ?s=N parte dalla slide N (1 = copertina), le Completed Activities (finestra MC 14 gg, SC/AMS 7 gg) sono incluse; ?archive=0 le esclude.
 function Inner() {
   const sp = useSearchParams();
   const router = useRouter();
@@ -24,7 +24,7 @@ function Inner() {
   const touch = useRef<number | null>(null);
 
   useEffect(() => { api<{ state: AppState }>('/api/state').then((r) => setSt(r.state)).catch(() => router.push('/login')); }, [router]);
-  const slides = st ? buildSlides(st, sp.get('archive') === '1') : [];
+  const slides = st ? buildSlides(st, sp.get('archive') !== '0') : [];
   const n = slides.length;
   const go = useCallback((f: (x: number) => number) => setI((x) => Math.min(Math.max(0, f(x)), Math.max(0, n - 1))), [n]);
 
@@ -37,7 +37,7 @@ function Inner() {
     return () => { window.removeEventListener('resize', fit); document.removeEventListener('fullscreenchange', onFs); document.body.style.overflow = ''; };
   }, []);
   useEffect(() => { document.title = st ? `Presenta · ${st.deck.week_label}` : 'Presenta'; }, [st]);
-  useEffect(() => { if (st) history.replaceState(null, '', `?s=${i + 1}${sp.get('archive') === '1' ? '&archive=1' : ''}`); }, [i, st, sp]);
+  useEffect(() => { if (st) history.replaceState(null, '', `?s=${i + 1}${sp.get('archive') === '0' ? '&archive=0' : ''}`); }, [i, st, sp]);
 
   const toggleFull = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});

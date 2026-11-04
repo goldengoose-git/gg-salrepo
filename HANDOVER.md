@@ -41,3 +41,9 @@ Dettagli tecnici e regole dati: `HANDOVER.json`, `DEPLOY.md`.
 - Campo Rilascio tolto da modale, tabella, slide/PPTX (colonna DB e import/export CSV restano).
 - Righe completate: badge viola "✓ Done" in Activity Status (anteprima, PDF, PPTX).
 - AMS: impaginazione per altezza (una slide finché entrano, poi pagine bilanciate, mai 1-2 ticket orfani); toast Done corretto.
+
+## v12 (2026-11-04)
+- **Pubblica settimana** genera il PPTX (con Completed) e lo carica su SharePoint via flusso Power Automate (`SAL_EXPORT_URL`, vedi `POWER_AUTOMATE.md`). Se l'upload fallisce la settimana non viene pubblicata. Esito in `decks.export_*` (migrazione idempotente: `npm run db:migrate`).
+- **Nuova settimana** richiede export riuscito (409 altrimenti; solo ADMIN puo forzare con `force:true` via API). Admin: pulsante "Riesporta" in Anteprima (`POST /api/deck/export`).
+- **Completed Activities** (anteprima, PDF, PPTX, Presenta): solo voci archiviate con `closed_at` negli ultimi 14 gg (MC) / 7 gg (SC, AMS) dalla data SAL; le Completed della settimana corrente restano nelle tabelle. Presenta le include di default (`?archive=0` le esclude); toggle export acceso di default.
+- Import Jira: `closed_at` da *Resolved* (fallback *Updated*).

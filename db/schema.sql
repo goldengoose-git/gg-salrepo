@@ -140,3 +140,12 @@ alter table users drop constraint if exists users_role_check
 alter table users add constraint users_role_check check (role in ('MC','SC','ADMIN'))
 ;
 create index if not exists audit_log_action_at on audit_log (action, at desc)
+
+;
+alter table decks add column if not exists export_status text
+;
+alter table decks add column if not exists export_at timestamptz
+;
+alter table decks add column if not exists export_url text
+;
+alter table decks add column if not exists export_error text

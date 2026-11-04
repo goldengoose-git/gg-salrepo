@@ -1,6 +1,7 @@
 import { q } from '@/lib/db';
 import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
+import { exportConfigured } from '@/lib/remote-export';
 import { addDays, formatSalDate, isIso, weekLabel } from '@/lib/dates';
 
 // Nuova settimana: copia impostazioni, tutte le righe (attive e in archivio) e timeline.
@@ -9,6 +10,9 @@ export async function POST(req: Request) {
   if (isErr(me)) return me;
   const b = await req.json().catch(() => ({}));
   const cur = await currentDeck();
+  // con l'export remoto attivo la settimana va prima pubblicata (PPTX salvato su SharePoint); solo Admin All puo forzare
+  if (exportConfigured() && cur.export_status !== 'ok' && !(b.force === true && me.role === 'ADMIN'))
+    return fail('Prima pubblica la settimana: il PPTX non risulta ancora esportato su SharePoint', 409);
   // data SAL della nuova settimana (default: una settimana dopo); Week e data in cover derivano da qui
   const salDate = isIso(b.sal_date) ? b.sal_date : addDays(cur.sal_date && isIso(cur.sal_date) ? cur.sal_date : new Date().toISOString().slice(0, 10), 7);
   const label = weekLabel(salDate);

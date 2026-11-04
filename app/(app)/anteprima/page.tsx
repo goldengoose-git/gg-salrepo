@@ -13,7 +13,7 @@ const DAYS = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'vene
 const dayName = (iso: string) => (isIso(iso) ? DAYS[new Date(iso + 'T12:00:00Z').getUTCDay()] : '');
 
 export default function Anteprima() {
-  const { state, reload, toast } = useApp();
+  const { me, state, reload, toast } = useApp();
   const d = state!.deck;
   const salNow = d.sal_date || parseSalLabel(d.date_label) || '';
   const [f, setF] = useState({ client: d.client, subtitle: d.subtitle, sal_date: salNow });
@@ -28,7 +28,10 @@ export default function Anteprima() {
     <>
       <div className="top"><h2>Anteprima ed export</h2><span className="sp" />
         <span className="muted">{d.status === 'published' ? `Pubblicata ${d.published_at?.slice(0, 10)}` : 'Bozza'}</span>
-        <button className="btn" onClick={() => run(() => api('/api/deck/publish', 'POST'), 'Settimana pubblicata (copia salvata nello storico)')}>Pubblica settimana</button>
+        {d.export_status === 'ok' && <span className="muted" title={d.export_at ?? ''}>· {d.export_url ? <a href={d.export_url} target="_blank" rel="noreferrer">PPTX su SharePoint ✓</a> : 'PPTX su SharePoint ✓'}</span>}
+        {d.export_status === 'error' && <span style={{ color: '#c0392b', fontSize: 13 }} title={d.export_error ?? ''}>· Export SharePoint non riuscito</span>}
+        {me.role === 'ADMIN' && d.export_status && <button className="btn" onClick={() => run(() => api('/api/deck/export', 'POST'), 'PPTX esportato su SharePoint')}>Riesporta</button>}
+        <button className="btn" onClick={() => run(() => api('/api/deck/publish', 'POST'), 'Settimana pubblicata (copia salvata nello storico; PPTX su SharePoint se configurato)')}>Pubblica settimana</button>
         <button className="btn" onClick={() => setDup({ sal_date: salNow ? addDays(salNow, 7) : '' })}><Ic n="cp" />Nuova settimana</button>
         <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
         <a className="btn" href="/presenta" title="Presentazione a schermo intero"><Ic n="pv" />Presenta</a>

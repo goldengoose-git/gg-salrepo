@@ -1,6 +1,20 @@
 import { fmtEstimate } from './lookups';
 import { AMS_STATUS, COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
 import type { AppState, Item } from './types';
+import { parseSalLabel } from './dates';
+
+// Completed Activities in presentazione/export: solo le voci archiviate chiuse negli ultimi N giorni dalla data del SAL (MC 14, SC e AMS 7).
+// Le Completed della settimana corrente restano nelle tabelle (badge Done) e non si ripetono qui.
+export const COMPLETED_DAYS: Record<Item['area'], number> = { MC: 14, SC: 7, AMS: 7 };
+export function completedWindow(st: AppState): Item[] {
+  const sal = st.deck.sal_date || parseSalLabel(st.deck.date_label) || new Date().toISOString().slice(0, 10);
+  const end = Date.parse(sal + 'T00:00:00Z'); // giorni di calendario: SAL 04/11 e 7 gg => dal 28/10 compreso
+  return st.items.filter((i) => {
+    if (!i.archived_at) return false;
+    const t = Date.parse(String(i.closed_at ?? i.archived_at));
+    return Number.isFinite(t) && t >= end - COMPLETED_DAYS[i.area] * 86400000;
+  });
+}
 
 export type SRow = { cells: string[]; status?: Status; completed?: boolean; ams?: { t: string; tag: string }[] };
 export type PBar = { label: string; status: BarStatus; start: number; end: number; row: number; out: 'in' | 'right' | 'left' };
@@ -192,7 +206,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   );
 
   if (includeArchive) {
-    const arch = st.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
+    const arch = completedWindow(st).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
     if (arch.length) {
       const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
       const { pages, tier } = paginateSmart(arch, (it, t) => estRowH(COLS.completed, cc(it), t));

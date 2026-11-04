@@ -9,6 +9,7 @@ export type Deck = {
   logo_left_url: string | null; logo_right_url: string | null;
   bg_cover_url: string | null; bg_divider_url: string | null; bg_table_url: string | null;
   overlay: number; status: string; published_at: string | null; created_at: string;
+  export_status?: 'ok' | 'error' | null; export_at?: string | null; export_url?: string | null; export_error?: string | null;
 };
 export type Item = {
   id: string; deck_id: string; area: Area; position: number; code: string; type: string; description: string;
