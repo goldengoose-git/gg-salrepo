@@ -19,7 +19,7 @@ export type Item = {
 export type Bar = {
   id: string; deck_id: string; lane: Lane; label: string; status: BarStatus; start_m: number; end_m: number; row: number;
 };
-export type SnapshotRow = { id: string; week_label: string; created_by: string | null; created_at: string };
+export type SnapshotRow = { id: string; week_label: string; created_by: string | null; created_at: string; export_url?: string | null };
 export type Lookup = { id: string; kind: 'type_mc' | 'type_sc' | 'owner' | 'contract_label'; value: string; position: number };
 export type TeamStatus = { team: 'MC' | 'SC'; done_at: string; done_by: string | null };
 export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[]; teamStatus: TeamStatus[]; uiColors: UiColors };

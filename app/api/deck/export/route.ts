@@ -19,6 +19,6 @@ export async function POST() {
   } catch (e: any) {
     await saveExportResult(st.deck.id, { error: e.message }).catch(() => {});
     await audit(me, 'export-remote-fail', 'deck', st.deck.id, { error: e.message }).catch(() => {});
-    return fail(`Export su SharePoint non riuscito: ${e.message}`, 502);
+    return fail(`Export remoto non riuscito: ${e.message}`, 502);
   }
 }

@@ -28,8 +28,8 @@ export default function Anteprima() {
     <>
       <div className="top"><h2>Anteprima ed export</h2><span className="sp" />
         <span className="muted">{d.status === 'published' ? `Pubblicata ${d.published_at?.slice(0, 10)}` : 'Bozza'}</span>
-        {d.export_status === 'ok' && <span className="muted" title={d.export_at ?? ''}>· {d.export_url ? <a href={d.export_url} target="_blank" rel="noreferrer">PPTX su SharePoint ✓</a> : 'PPTX su SharePoint ✓'}</span>}
-        {d.export_status === 'error' && <span style={{ color: '#c0392b', fontSize: 13 }} title={d.export_error ?? ''}>· Export SharePoint non riuscito</span>}
+        {d.export_status === 'ok' && <span className="muted" title={d.export_at ?? ''}>· {d.export_url ? <a href={d.export_url} target="_blank" rel="noreferrer">PPTX esportato ✓</a> : 'PPTX esportato ✓'}</span>}
+        {d.export_status === 'error' && <span style={{ color: '#c0392b', fontSize: 13 }} title={d.export_error ?? ''}>· Export non riuscito</span>}
         {me.role === 'ADMIN' && d.export_status && <button className="btn" onClick={() => run(() => api('/api/deck/export', 'POST'), 'PPTX esportato su SharePoint')}>Riesporta</button>}
         <button className="btn" onClick={() => run(() => api('/api/deck/publish', 'POST'), 'Settimana pubblicata (copia salvata nello storico; PPTX su SharePoint se configurato)')}>Pubblica settimana</button>
         <button className="btn" onClick={() => setDup({ sal_date: salNow ? addDays(salNow, 7) : '' })}><Ic n="cp" />Nuova settimana</button>
@@ -53,6 +53,7 @@ export default function Anteprima() {
           {state!.snapshots.length ? state!.snapshots.map((s) => (
             <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13 }}>
               <span style={{ flex: 1 }}>{s.week_label} <span className="muted">· {s.created_at.slice(0, 10)}</span></span>
+              {s.export_url && <a className="btn" style={{ height: 26, padding: '0 8px', fontSize: 12 }} href={s.export_url} target="_blank" rel="noreferrer" title="Apri il PPTX esportato per questa settimana">PPTX</a>}
               <a className="ib" href={`/api/snapshots/${s.id}`} title="Scarica JSON"><Ic n="dl" /></a>
               <button className="ib" title="Elimina dallo storico" onClick={() => { if (confirm(`Eliminare "${s.week_label}" dallo storico? L'operazione non si può annullare.`)) run(() => api(`/api/snapshots/${s.id}`, 'DELETE'), 'Eliminata dallo storico'); }}><Ic n="tr" /></button>
             </div>

@@ -49,3 +49,4 @@ Dettagli tecnici e regole dati: `HANDOVER.json`, `DEPLOY.md`.
 - Import Jira: `closed_at` da *Resolved* (fallback *Updated*).
 - v12b: banda in alto con ambiente (Produzione/Preview/Locale), branch git e commit (variabili Vercel), endpoint DB Neon (solo Admin; etichetta facoltativa `SAL_DB_LABEL`), utente e orario di login (`iat` del JWT).
 - v12c: ID del blocco AMS centrato verticalmente (anteprima e PPTX); Archivio › "PDF completati 14 gg" (`/print/completati?days=14`, `GET /api/completed`): voci completate negli ultimi N giorni da tutte le settimane, raggruppate MC/SC/AMS.
+- v12d: link PPTX per settimana nello Storico (Anteprima, da `decks.export_url`); Completed (slide/PPTX/PDF) con etichetta generica MC / CRM / AMS al posto del Type; finestra Completed e PDF "14 gg" calcolati sulla GoLive date (28/10, Beg|Mid|End Oct = 5/15/25), se non e una data (TBD, vuota) sulla data di chiusura. Messaggi export neutri (non piu "SharePoint").

@@ -1,7 +1,7 @@
 import { fmtEstimate } from './lookups';
 import { AMS_STATUS, COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
 import type { AppState, Item } from './types';
-import { parseSalLabel } from './dates';
+import { doneTime, parseSalLabel } from './dates';
 
 // Completed Activities in presentazione/export: solo le voci archiviate chiuse negli ultimi N giorni dalla data del SAL (MC 14, SC e AMS 7).
 // Le Completed della settimana corrente restano nelle tabelle (badge Done) e non si ripetono qui.
@@ -11,7 +11,7 @@ export function completedWindow(st: AppState): Item[] {
   const end = Date.parse(sal + 'T00:00:00Z'); // giorni di calendario: SAL 04/11 e 7 gg => dal 28/10 compreso
   return st.items.filter((i) => {
     if (!i.archived_at) return false;
-    const t = Date.parse(String(i.closed_at ?? i.archived_at));
+    const t = doneTime(i, new Date(end)); // GoLive date se datata (es. 28/10, Beg Oct), altrimenti data di chiusura
     return Number.isFinite(t) && t >= end - COMPLETED_DAYS[i.area] * 86400000;
   });
 }
@@ -208,7 +208,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   if (includeArchive) {
     const arch = completedWindow(st).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
     if (arch.length) {
-      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
+      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.area === 'SC' ? 'CRM' : 'MC', it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
       const { pages, tier } = paginateSmart(arch, (it, t) => estRowH(COLS.completed, cc(it), t));
       pages.forEach((page, p, all) => {
         slides.push({

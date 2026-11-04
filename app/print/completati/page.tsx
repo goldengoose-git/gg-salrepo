@@ -3,7 +3,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/client';
 
-type R = { area: 'MC' | 'SC' | 'AMS'; code: string; type: string; description: string; owner: string; contract: string; closed: string; week_label: string };
+type R = { area: 'MC' | 'SC' | 'AMS'; code: string; description: string; owner: string; contract: string; golive_date: string; closed: string; week_label: string };
+const LBL = { MC: 'MC', SC: 'CRM', AMS: 'AMS' } as const;
 const AREAS: { k: R['area']; l: string }[] = [{ k: 'MC', l: 'Marketing Cloud' }, { k: 'SC', l: 'CRM & Service Cloud' }, { k: 'AMS', l: 'Ticket AMS' }];
 const d10 = (s: string) => { const [y, m, d] = s.slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
 
@@ -28,6 +29,7 @@ function Inner() {
       <div className="noprint" style={{ marginBottom: 14 }}><button className="btn pri" onClick={() => window.print()}>Stampa / Salva come PDF</button></div>
       <div className="cmp">
         <div style={{ font: '800 20px Montserrat, sans-serif' }}>Golden Goose · Completed ultimi {data.days} giorni (storico settimane)</div>
+        <div style={{ color: '#666', marginTop: 2 }}>Periodo calcolato sulla GoLive date; se non è una data (TBD, vuota) si usa la data di chiusura.</div>
         <div style={{ color: '#666', marginTop: 4 }}>Generato il {today} · {data.rows.length} voci (MC {data.rows.filter((r) => r.area === 'MC').length} · SC {data.rows.filter((r) => r.area === 'SC').length} · AMS {data.rows.filter((r) => r.area === 'AMS').length})</div>
         {AREAS.map(({ k, l }) => {
           const rows = data.rows.filter((r) => r.area === k);
@@ -36,8 +38,8 @@ function Inner() {
               <h2>{l} ({rows.length})</h2>
               {rows.length ? (
                 <table>
-                  <thead><tr><th style={{ width: 80 }}>{k === 'AMS' ? 'Ticket' : 'Tipo'}</th><th>Descrizione</th><th style={{ width: 150 }}>Owner</th><th style={{ width: 110 }}>Contract</th><th style={{ width: 80 }}>Chiuso il</th><th style={{ width: 70 }}>Settimana</th></tr></thead>
-                  <tbody>{rows.map((r, i) => <tr key={i}><td>{k === 'AMS' ? r.code : r.type}</td><td>{r.description}</td><td>{r.owner}</td><td>{r.contract}</td><td>{d10(r.closed)}</td><td>{r.week_label}</td></tr>)}</tbody>
+                  <thead><tr><th style={{ width: 80 }}>{k === 'AMS' ? 'Ticket' : 'Area'}</th><th>Descrizione</th><th style={{ width: 150 }}>Owner</th><th style={{ width: 110 }}>Contract</th><th style={{ width: 80 }}>GoLive</th><th style={{ width: 80 }}>Chiuso il</th><th style={{ width: 70 }}>Settimana</th></tr></thead>
+                  <tbody>{rows.map((r, i) => <tr key={i}><td>{k === 'AMS' ? r.code : LBL[k]}</td><td>{r.description}</td><td>{r.owner}</td><td>{r.contract}</td><td>{r.golive_date}</td><td>{d10(r.closed)}</td><td>{r.week_label}</td></tr>)}</tbody>
                 </table>
               ) : <div style={{ color: '#888', margin: '6px 0 18px' }}>Nessuna voce.</div>}
             </div>
