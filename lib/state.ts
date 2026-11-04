@@ -1,5 +1,5 @@
 import { q } from './db';
-import type { AppState, Bar, Deck, Item, Lookup, TeamStatus } from './types';
+import type { AppState, Bar, Deck, Item, Lookup, TeamStatus, UiColors } from './types';
 
 export async function currentDeck(): Promise<Deck> {
   const rows = await q<Deck>('select * from decks order by created_at desc limit 1');
@@ -9,13 +9,16 @@ export async function currentDeck(): Promise<Deck> {
 
 export async function getState(): Promise<AppState> {
   const deck = await currentDeck();
-  const [items, bars, snapshots, lookups, teamStatus] = await Promise.all([
+  const [items, bars, snapshots, lookups, teamStatus, colorRows] = await Promise.all([
     q<Item>('select * from items where deck_id = $1 order by area, position, created_at', [deck.id]),
     q<any>('select * from pipeline_bars where deck_id = $1 order by lane, row, start_m', [deck.id]),
-    q<any>('select id, week_label, created_by, created_at from snapshots order by created_at desc limit 30'),
+    q<any>('select s.id, s.week_label, s.created_by, s.created_at, d.export_url from snapshots s left join decks d on d.id = s.deck_id order by s.created_at desc limit 30'),
     q<Lookup>('select id, kind, value, position from lookups order by kind, position, value').catch(() => [] as Lookup[]),
     q<TeamStatus>('select team, done_at, done_by from team_status where deck_id = $1', [deck.id]).catch(() => [] as TeamStatus[]),
+    q<{ value: string }>("select value from settings where key = 'ui_colors'").catch(() => [] as { value: string }[]),
   ]);
+  let uiColors: UiColors = {};
+  try { uiColors = colorRows[0]?.value ? JSON.parse(colorRows[0].value) : {}; } catch {}
   const num = (x: any) => Number(x);
   return {
     deck,
@@ -24,5 +27,6 @@ export async function getState(): Promise<AppState> {
     snapshots,
     lookups,
     teamStatus: teamStatus.map((t) => ({ ...t, done_at: new Date(t.done_at as any).toISOString() })),
+    uiColors,
   };
 }

@@ -1,7 +1,7 @@
 import PptxGenJS from 'pptxgenjs';
 import { BAR_STATUS, STATUS, type Status } from './constants';
 import { PRIO, prioKey } from './prio';
-import { buildSlides, PIPE, pipePitch } from './slides';
+import { buildSlides, estRowH, FIT_FULL, FIT_H, FIT_ROW, PIPE, pipePitch } from './slides';
 import type { AppState } from './types';
 
 const PX = 13.333 / 1280; // 1 px slide -> pollici
@@ -9,7 +9,11 @@ const px = (n: number) => n * PX;
 const clean = (s: string) => String(s ?? '').replace(/\*\*/g, '');
 const hex = (c: string) => c.replace('#', '');
 const FONT_T = 'Montserrat';
-const FONT_B = 'Outfit';
+const FONT_B = 'Montserrat'; // tutto il PPTX in Montserrat (un solo font da installare)
+// Famiglie Montserrat installate dalla cartella fonts/: testo Regular, grassetto SemiBold (600), titoli e ID ExtraBold (800)
+const FONT_BB = 'Montserrat SemiBold', FONT_MED = 'Montserrat', FONT_XB = 'Montserrat ExtraBold', FONT_TS = 'Montserrat SemiBold';
+const PT = 0.75;
+const MW = 1.14; // Montserrat e circa il 14% piu larga di Outfit: stima righe per il PPTX // 1 px dell'anteprima = 0,75 pt
 
 // AddImage expects a complete data URI, not a bare "image/png;base64,..." string.
 // Preserve the natural aspect ratio of logos (PPTX's `sizing` option is not
@@ -94,10 +98,18 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
   };
 
   let pageNo = 0;
-  const footer = (s: PptxGenJS.Slide, _sl: unknown) => {
-    s.addShape('line', { x: px(46), y: 7.5 - px(34), w: px(1200), h: 0, line: { color: '111111', width: 1.5 } });
-    s.addText(`${d.subtitle} · ${d.date_label}`, { x: px(46), y: 7.5 - px(32), w: 8, h: px(30), fontFace: FONT_B, fontSize: 10, bold: true, color: '777777', margin: 0, valign: 'middle' });
-    s.addText(String(pageNo), { x: px(1246) - 1, y: 7.5 - px(32), w: 1, h: px(30), fontFace: FONT_B, fontSize: 10, bold: true, color: '777777', margin: 0, valign: 'middle', align: 'right' });
+  const FOOT_H = [34, 26], FOOT_PX = [14, 11], BODY_PX = [12.5, 11.5, 11]; // corpo mai sotto 11 px (8,25 pt); AMS: 12,5 px, impaginazione originale
+  const footer = (s: PptxGenJS.Slide, t: number) => { // t: 0 = originale (AMS), 1 = compatto
+    const fh = FOOT_H[t], fs = FOOT_PX[t] * PT;
+    s.addShape('line', { x: px(46), y: 7.5 - px(fh), w: px(1200), h: 0, line: { color: '111111', width: t ? 1 : 1.5 } });
+    s.addText(`${d.subtitle} · ${d.date_label}`, { x: px(46), y: 7.5 - px(fh - 2), w: 8, h: px(fh - 4), fontFace: FONT_BB, fontSize: fs, color: '777777', margin: 0, valign: 'middle' });
+    s.addText(String(pageNo), { x: px(1246) - 1, y: 7.5 - px(fh - 2), w: 1, h: px(fh - 4), fontFace: FONT_BB, fontSize: fs, color: '777777', margin: 0, valign: 'middle', align: 'right' });
+  };
+  // titolo come nell'anteprima: Montserrat ExtraBold 30 px, parte "(1/2)" in grigio 16 px
+  const slideTitle = (s: PptxGenJS.Slide, title: string, part: string, wPx: number, yearSuffix = '') => {
+    const runs: any[] = [{ text: title + yearSuffix, options: { fontFace: FONT_XB, fontSize: 30 * PT, color: '2C2D2C' } }];
+    if (part) runs.push({ text: `  (${part})`, options: { fontFace: FONT_TS, fontSize: 16 * PT, color: '8D919C' } });
+    s.addText(runs, { x: px(46), y: px(20), w: px(wPx), h: px(40), margin: 0, valign: 'middle', wrap: false });
   };
   for (const sl of slides) {
     const s = pres.addSlide();
@@ -114,17 +126,20 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       s.addText(sl.kind === 'section' ? sl.title : 'Thank you', { x: 0.8, y: 3.0, w: 11.5, h: 1.2, fontFace: FONT_T, fontSize: 40, bold: true, color: 'FFFFFF' });
       if (logoL && sl.kind === 'closing') s.addImage(contain(logoL, 0.8, 5.6, 2.0, 0.8));
     } else if (sl.kind === 'table') {
+      const fit = sl.theme !== 'ams';
+      const tier = sl.tier ?? 0;
+      const BODY = (fit ? BODY_PX[tier] : 12.5) * PT;
       s.background = { color: 'FFFFFF' };
       if (bgTab) s.addImage({ data: bgTab.data, x: 0, y: 0, w: 13.333, h: 7.5 });
       s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: sl.theme === 'completed' ? '7135A8' : 'E0301E' }, line: { type: 'none' } });
-      s.addText(clean(sl.title) + (sl.part ? `  (${sl.part})` : ''), { x: 0.5, y: 0.2, w: 9, h: 0.5, fontFace: FONT_T, fontSize: 20, bold: true, color: '2C2D2C' });
-      if (logoR) s.addImage(contain(logoR, 11.4, 0.2, 1.5, 0.6));
+      slideTitle(s, clean(sl.title), sl.part, 1000);
       if (sl.legend) {
-        let lx = 0.5;
+        let lx = px(46);
         for (const k of ['ontrack', 'delay', 'blocked', 'onhold', ...(sl.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]) {
-          s.addShape('ellipse', { x: lx, y: 0.78, w: 0.12, h: 0.12, fill: { color: hex(STATUS[k].color) }, line: { type: 'none' } });
-          s.addText(STATUS[k].label, { x: lx + 0.17, y: 0.72, w: 1.0, h: 0.25, fontFace: FONT_B, fontSize: 9, color: '555555' });
-          lx += 1.25;
+          const lab = STATUS[k].label, tw = lab.length * 6.3 + 4;
+          s.addShape('ellipse', { x: lx, y: px(72.5), w: px(11), h: px(11), fill: { color: hex(STATUS[k].color) }, line: { type: 'none' } });
+          s.addText(lab, { x: lx + px(17), y: px(69), w: px(tw), h: px(18), fontFace: FONT_B, fontSize: 13 * PT, color: '555555', margin: 0, valign: 'middle', wrap: false });
+          lx += px(17 + tw + 14);
         }
       }
       const tot = sl.columns.reduce((a, c) => a + c.w, 0);
@@ -134,7 +149,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       const accent = sl.theme === 'completed' ? '7135A8' : 'E0301E';
       const header = sl.columns.map((c) => ({
         text: c.name,
-        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: 8.5, align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
+        options: { bold: true, color: '2C2D2C', fill: { color: 'F1F1F1' }, fontFace: FONT_T, fontSize: BODY - 0.375, align: c.align === 'c' ? 'center' : 'left', valign: 'middle',
           border: [white, white, { type: 'solid' as const, pt: 2.25, color: accent }, white] },
       }));
       // testo con "(next step: …)" in grassetto, **x** in grassetto
@@ -142,7 +157,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
         const out: any[] = [];
         const re = /\*\*(.+?)\*\*|\(\s*next\s*step[^)]*\)/gi;
         let last = 0, m: RegExpExecArray | null;
-        const lines = (x: string, bold: boolean) => x.split('\n').forEach((ln, i, arr) => { if (ln || arr.length === 1) out.push({ text: ln, options: { bold, fontSize: size, breakLine: i < arr.length - 1 } }); else out.push({ text: '', options: { fontSize: size, breakLine: true } }); });
+        const lines = (x: string, bold: boolean) => x.split('\n').forEach((ln, i, arr) => { if (ln || arr.length === 1) out.push({ text: ln, options: { fontFace: bold ? FONT_BB : FONT_B, fontSize: size, breakLine: i < arr.length - 1 } }); else out.push({ text: '', options: { fontSize: size, breakLine: true } }); });
         while ((m = re.exec(t))) { if (m.index > last) lines(t.slice(last, m.index), false); lines(m[1] ?? m[0], true); last = m.index + m[0].length; }
         if (last < t.length) lines(t.slice(last), false);
         return out.length ? out : [{ text: '', options: { fontSize: size } }];
@@ -151,34 +166,41 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
         r.cells.map((t, ci) => {
           const col = sl.columns[ci];
           const zebra = ri % 2 === 1 ? 'F4F4F4' : 'FFFFFF';
-          const base: any = { fontFace: FONT_B, fontSize: 8.5, valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
+          const base: any = { fontFace: FONT_B, fontSize: BODY, valign: 'middle', align: col.align === 'c' ? 'center' : 'left', border: white, color: '2C2D2C', fill: { color: zebra } };
           if (ci === 0 && r.status) {
             const st = STATUS[r.status];
-            return { text: clean(t), options: { ...base, fontFace: FONT_T, bold: true, fontSize: 10, align: 'center', color: hex(st.ink), fill: { color: hex(st.tint) },
-              border: [white, white, white, { type: 'solid' as const, pt: 5, color: hex(st.stripe) }], valign: r.ams ? 'top' : 'middle' } };
+            return { text: clean(t), options: { ...base, fontFace: FONT_XB, fontSize: BODY + 1.125, align: 'center', color: hex(st.ink), fill: { color: hex(st.tint) },
+              border: [white, white, white, { type: 'solid' as const, pt: 5, color: hex(st.stripe) }], valign: 'middle' } };
           }
           if (r.ams && ci === 1) {
-            const rr: any[] = [{ text: clean(t), options: { bold: true, fontSize: 10, breakLine: true } }, { text: ' ', options: { fontSize: 4, breakLine: true } }];
+            const rr: any[] = [{ text: clean(t), options: { fontFace: FONT_BB, fontSize: 14 * PT, breakLine: true } }, { text: ' ', options: { fontSize: 4, breakLine: true } }];
             r.ams.forEach((a, k) => {
-              rr.push({ text: `${a.t} `, options: { bullet: { indent: 12 }, fontSize: 8.5 } });
-              rr.push({ text: `(${a.tag})`, options: { bold: true, fontSize: 8.5, breakLine: k < r.ams!.length - 1 } });
+              rr.push({ text: `${a.t} `, options: { bullet: { indent: 12 }, fontSize: 13 * PT } });
+              rr.push({ text: `(${a.tag})`, options: { fontFace: FONT_BB, fontSize: 13 * PT, breakLine: k < r.ams!.length - 1 } });
             });
             return { text: rr, options: { ...base, align: 'left', valign: 'top' } };
           }
           if (ci === sl.prioCol && t) {
             const k = prioKey(t);
-            if (k) return { text: [{ text: PRIO[k].glyph + ' ', options: { color: hex(PRIO[k].c), bold: true, fontSize: 11 } }, { text: t, options: { color: '2C2D2C' } }], options: base };
+            if (k) return { text: [{ text: PRIO[k].glyph + ' ', options: { color: hex(PRIO[k].c), bold: true, fontSize: BODY } }, { text: t, options: { color: '2C2D2C' } }], options: base };
           }
-          if (ci === sl.statusCol) return { text: clean(t), options: { ...base, align: 'center' } };
-          return { text: runs(t, 8.5), options: base };
+          if (ci === sl.statusCol && r.status === 'completed') return { text: '✓ Done', options: { ...base, fontFace: FONT_BB, align: 'center', bold: true, color: 'FFFFFF', fill: { color: '7135A8' } } };
+          if (ci === sl.statusCol) return { text: clean(t), options: { ...base, fontFace: FONT_MED, align: 'center' } };
+          return { text: runs(t, BODY), options: base };
         })
       );
-      s.addTable([header, ...body] as any, { x: px(46), y: px(100), w: W, colW, rowH: sl.theme === 'ams' ? undefined : px(44), margin: [0.03, 0.08, 0.03, 0.08] });
-      footer(s, sl);
+      // righe: altezza naturale stimata (come in paginazione) + il resto dello spazio distribuito fino a poco sopra il footer (slide piene);
+      // sulle slide con meno righe altezza fissa. PowerPoint allarga comunque le righe se il testo non entra.
+      const HEAD = 41;
+      const nat = sl.rows.map((r) => estRowH(sl.columns, r.cells, tier, MW));
+      const slack = Math.max(0, FIT_H - 28 - HEAD - nat.reduce((a, b) => a + b, 0)) / Math.max(1, sl.rows.length);
+      const rowH = !fit ? undefined : [px(HEAD), ...nat.map((h) => px(sl.rows.length >= FIT_FULL ? h + slack : Math.max(h, FIT_ROW)))];
+      s.addTable([header, ...body] as any, { x: px(46), y: px(fit ? 94 : 100), w: W, colW, rowH: rowH as any, margin: [0.03, 0.08, 0.03, 0.08] });
+      footer(s, fit ? 1 : 0);
     } else if (sl.kind === 'pipeline') {
       s.background = { color: 'FFFFFF' };
       s.addShape('rect', { x: 0, y: 0, w: px(14), h: 7.5, fill: { color: 'E0301E' }, line: { type: 'none' } });
-      s.addText(`${sl.title} ${sl.year}` + (sl.part ? `  (${sl.part})` : ''), { x: 0.5, y: 0.2, w: 7.5, h: 0.5, fontFace: FONT_T, fontSize: 20, bold: true, color: '2C2D2C' });
+      slideTitle(s, sl.title, sl.part, 600, ` ${sl.year}`);
       let gx = 8.4;
       (Object.keys(BAR_STATUS) as (keyof typeof BAR_STATUS)[]).forEach((k) => {
         s.addShape('ellipse', { x: gx, y: 0.38, w: 0.12, h: 0.12, fill: { color: hex(BAR_STATUS[k].color) }, line: { type: 'none' } });
@@ -217,7 +239,7 @@ export async function buildPptx(st: AppState, includeArchive: boolean): Promise<
       s.addShape('line', { x: tx, y: top - px(6), w: 0, h: bottom - top + px(6), line: { color: 'E0301E', width: 1.5 } });
       s.addShape('ellipse', { x: tx - px(5), y: px(88), w: px(10), h: px(10), fill: { color: 'E0301E' }, line: { type: 'none' } });
       s.addText('Today', { x: tx + px(9), y: px(82), w: 0.7, h: 0.22, fontFace: FONT_B, fontSize: 9.5, bold: true, color: 'E0301E', margin: 0, valign: 'middle' });
-      footer(s, sl);
+      footer(s, 0);
     }
   }
   const out = await pres.write({ outputType: 'nodebuffer' });

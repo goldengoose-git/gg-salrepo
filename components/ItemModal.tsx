@@ -7,6 +7,7 @@ import { useApp } from './AppShell';
 import Modal from './Modal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
+import { uiAms, uiContract, uiStatus } from '@/lib/ui-colors';
 import { joinContract, joinOwners, normEstimate, parseContract, parseOwners } from '@/lib/lookups';
 
 const EMPTY = { activity: '', code: '', type: '', description: '', priority: 'Medium', requested_date: '', golive_date: '', release_date: '', owner: '', estimate: '', contract: '', status: 'ontrack' as Status, ams_status: 'new' as AmsStatus };
@@ -85,7 +86,6 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
         </div>
         {L(ams ? 'Opened' : 'Requested date', <input value={f.requested_date} onChange={set('requested_date')} placeholder="gg/mm" />)}
         {L('GoLive date', <input value={f.golive_date} onChange={set('golive_date')} placeholder="gg/mm" />)}
-        {!ams && L('Data di rilascio', <input value={f.release_date} onChange={set('release_date')} placeholder="gg/mm" />)}
         {!ams && L('Stima', <div className="est">
           <input type="number" min={0} step={0.5} disabled={est === '-' && f.estimate === '-'} value={est === '-' ? '' : est} placeholder="0" onChange={(e) => setF({ ...f, estimate: e.target.value })} /><b>MD</b>
           <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap' }}><input type="checkbox" checked={f.estimate === '-'} onChange={(e) => setF({ ...f, estimate: e.target.checked ? '-' : '' })} />Nessuna (-)</label>
@@ -93,7 +93,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
         <div className="f" style={{ gridColumn: 'span 2' }}>
           <label className="lab">Contract type e status</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {(['OPEX', 'CAPEX'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k.toLowerCase() + (cc.type === k ? ' sel' : '')} style={{ border: 0, flex: 'none', height: 32, padding: '0 14px' }} onClick={() => setContract(cc.type === k ? '' : k, cc.label)}>{k}</button>)}
+            {(['OPEX', 'CAPEX'] as const).map((k) => <button type="button" key={k} className={'pill cx-' + k.toLowerCase() + (cc.type === k ? ' sel' : '')} style={{ border: 0, flex: 'none', height: 32, padding: '0 14px', background: uiContract(state?.uiColors, k).color, color: uiContract(state?.uiColors, k).text }} onClick={() => setContract(cc.type === k ? '' : k, cc.label)}>{k}</button>)}
             <select style={{ flex: 1, minWidth: 180 }} value={custom ? '__custom' : cc.label} onChange={(e) => {
               if (e.target.value === '__custom') { setCustom(true); return; }
               setCustom(false); setContract(cc.type, e.target.value);
@@ -115,7 +115,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {AMS_KEYS.map((s) => (
               <button type="button" key={s} onClick={() => setF({ ...f, ams_status: s, status: AMS_STATUS[s].status })} className="pill"
-                style={{ background: AMS_STATUS[s].color, color: AMS_STATUS[s].text, border: f.ams_status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.ams_status === s ? 1 : 0.55 }}>
+                style={{ background: uiAms(state?.uiColors, s).color, color: uiAms(state?.uiColors, s).text, border: f.ams_status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.ams_status === s ? 1 : 0.55 }}>
                 {AMS_STATUS[s].label}
               </button>
             ))}
@@ -127,7 +127,7 @@ export default function ItemModal({ area, item, label, onClose }: { area: Area; 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {STATUS_KEYS.map((s) => (
               <button type="button" key={s} onClick={() => setF({ ...f, status: s })} className="pill"
-                style={{ background: STATUS[s].color, color: STATUS[s].text, border: f.status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
+                style={{ background: uiStatus(state?.uiColors, s).color, color: uiStatus(state?.uiColors, s).text, border: f.status === s ? '2px solid var(--fgb)' : '2px solid transparent', opacity: f.status === s ? 1 : 0.55 }}>
                 {STATUS[s].label}
               </button>
             ))}

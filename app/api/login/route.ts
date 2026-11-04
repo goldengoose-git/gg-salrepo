@@ -22,10 +22,14 @@ async function turnstileOk(token: string | undefined, ip: string | null) {
 const WINDOW = "interval '15 minutes'";
 const MAX_PER_USER_IP = 5;
 const MAX_PER_IP = 20;
+const MAX_ADMIN_TOTAL = 5; // tentativi falliti per l'utente admin da qualsiasi IP
 
 export async function POST(req: Request) {
-  const { username, password, turnstile } = await req.json().catch(() => ({}));
+  const { username, password, turnstile, admin } = await req.json().catch(() => ({}));
   if (!username || !password) return fail('Credenziali mancanti');
+  // l'utente admin accede solo dalla pagina riservata (flag admin) e con limiti piu stretti
+  const isAdminTry = String(username).toLowerCase().trim() === 'admin';
+  if (isAdminTry && admin !== true) return fail('Utente o password errati', 401);
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const user = String(username).toLowerCase().trim().slice(0, 64);
   // blocco per troppi tentativi (se la tabella non esiste ancora, il login continua a funzionare)
@@ -35,8 +39,12 @@ export async function POST(req: Request) {
          from login_attempts where ip = $1 and ok = false and at > now() - ${WINDOW}`, [ip, user]);
     if ((c[0]?.u ?? 0) >= MAX_PER_USER_IP || (c[0]?.i ?? 0) >= MAX_PER_IP)
       return fail('Troppi tentativi. Riprova tra 15 minuti.', 429);
+    if (isAdminTry) {
+      const a = await q<any>(`select count(*)::int as n from login_attempts where username = 'admin' and ok = false and at > now() - ${WINDOW}`);
+      if ((a[0]?.n ?? 0) >= MAX_ADMIN_TOTAL) return fail('Troppi tentativi. Riprova tra 15 minuti.', 429);
+    }
   } catch {}
-  if (!(await turnstileOk(turnstile, ip === 'unknown' ? null : ip)))
+  if (!isAdminTry && !(await turnstileOk(turnstile, ip === 'unknown' ? null : ip)))
     return fail('Verifica anti-bot non superata, riprova', 403);
   const rows = await q<any>('select * from users where username = $1', [user]);
   const u = rows[0];
@@ -48,6 +56,8 @@ export async function POST(req: Request) {
   }
   // login riuscito: azzera i fallimenti e pulisce i log più vecchi di 7 giorni
   await q('delete from login_attempts where (ip = $1 and username = $2 and ok = false) or at < now() - interval \'7 days\'', [ip, user]).catch(() => {});
+  if (isAdminTry && u.role !== 'ADMIN') return fail('Utente o password errati', 401);
+  if (!isAdminTry && u.role === 'ADMIN') return fail('Utente o password errati', 401);
   await createSession({ username: u.username, role: u.role, name: u.display_name });
   return json({ ok: true });
 }

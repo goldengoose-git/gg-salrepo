@@ -9,12 +9,15 @@ import ItemModal from './ItemModal';
 import { ItemPill } from './StatusPill';
 import { Prio } from '@/lib/prio';
 import { fmtEstimate, parseContract } from '@/lib/lookups';
+import { uiAms, uiContract } from '@/lib/ui-colors';
 
 export function ContractPill({ v }: { v: string }) {
+  const { state } = useApp();
   const c = parseContract(v);
+  const col = c.type ? uiContract(state?.uiColors, c.type) : null;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-      {c.type && <span className={'pill cx-' + c.type.toLowerCase()}>{c.type}</span>}
+      {c.type && col && <span className={'pill cx-' + c.type.toLowerCase()} style={{ background: col.color, color: col.text }}>{c.type}</span>}
       {c.label && <span>{c.label}</span>}
     </span>
   );
@@ -62,7 +65,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
         <table className="t">
           <thead><tr>
             {canDrag && <th style={{ width: 28, padding: 0 }} />}<th style={{ width: 80 }}>{ams ? 'Ticket' : 'ID'}</th>{showType && <th>Type</th>}<th>{ams ? 'Subject' : 'Description'}</th><th>Priorità</th>
-            <th>{ams ? 'Opened' : 'Requested'}</th><th>GoLive</th>{!ams && <th>Rilascio</th>}<th>Owner</th>{!ams && <th>Stima</th>}{!ams && <th>Contract</th>}<th>Status</th><th style={{ width: 118 }} />
+            <th>{ams ? 'Opened' : 'Requested'}</th><th>GoLive</th><th>Owner</th>{!ams && <th>Stima</th>}{!ams && <th>Contract</th>}<th>Status</th><th style={{ width: 118 }} />
           </tr></thead>
           <tbody>
             {rows.map((i) => {
@@ -79,12 +82,12 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
                     onMouseDown={() => { grip.current = true; }} onMouseUp={() => { grip.current = false; }}>⋮⋮</td>}
                   <td><b>{ams ? i.code : `${prefix}-${String(n).padStart(2, '0')}`}</b></td>
                   {showType && <td>{i.type}</td>}
-                  <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td><td>{i.golive_date}</td>{!ams && <td>{i.release_date}</td>}
+                  <td style={{ minWidth: 240 }}>{i.description}</td><td><Prio p={i.priority} size={15} /></td><td>{i.requested_date}</td><td>{i.golive_date}</td>
                   <td>{i.owner}</td>{!ams && <td style={{ whiteSpace: 'nowrap' }}>{fmtEstimate(i.estimate)}</td>}{!ams && <td><ContractPill v={i.contract} /></td>}<td onClick={ams && canEdit ? (e) => e.stopPropagation() : undefined}>
                     {ams && canEdit
                       ? <select className="amssel" value={i.ams_status ?? 'wip'} aria-label="Stato ticket"
-                          style={{ background: AMS_STATUS[i.ams_status ?? 'wip'].color, color: AMS_STATUS[i.ams_status ?? 'wip'].text }}
-                          onChange={(e) => act(i.id, { ams_status: e.target.value }, e.target.value === 'done' ? 'Ticket Done, spostato in Archivio' : 'Stato aggiornato')}>
+                          style={{ background: uiAms(state!.uiColors, i.ams_status ?? 'wip').color, color: uiAms(state!.uiColors, i.ams_status ?? 'wip').text }}
+                          onChange={(e) => act(i.id, { ams_status: e.target.value }, e.target.value === 'done' ? 'Ticket Done: resta in questa settimana, andrà in Completed con la prossima' : 'Stato aggiornato')}>
                           {AMS_KEYS.map((k) => <option key={k} value={k} style={{ background: '#fff', color: '#111' }}>{AMS_STATUS[k].label}</option>)}
                         </select>
                       : <ItemPill i={i} />}
@@ -104,7 +107,7 @@ export default function ItemTable({ area, prefix, label }: { area: Area; prefix:
           </tbody>
         </table>
       </div>
-      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Max 12 righe per slide: oltre, la tabella continua automaticamente sulla pagina successiva. Gli ID si rinumerano da soli. Trascina le righe dalla maniglia ⋮⋮ (con ricerca o filtro attivi il riordino è disattivato) oppure usa le frecce.</div>
+      <div className="muted" style={{ marginTop: 12, fontSize: 13 }}>Massimo 12 righe per slide (almeno 11 su quelle piene, il corpo si riduce da solo se serve, mai sotto 11 px); oltre, continua sulla pagina successiva. Gli ID si rinumerano da soli. Trascina le righe dalla maniglia ⋮⋮ (con ricerca o filtro attivi il riordino è disattivato) oppure usa le frecce.</div>
       {edit && <ItemModal area={area} item={edit === 'new' ? undefined : edit} label={label} onClose={() => setEdit(null)} />}
     </>
   );

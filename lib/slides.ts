@@ -1,6 +1,20 @@
 import { fmtEstimate } from './lookups';
 import { AMS_STATUS, COLS, Col, MAX_ROWS, STATUS, type BarStatus, type Lane, type Status } from './constants';
 import type { AppState, Item } from './types';
+import { doneTime, parseSalLabel } from './dates';
+
+// Completed Activities in presentazione/export: solo le voci archiviate chiuse negli ultimi N giorni dalla data del SAL (MC 14, SC e AMS 7).
+// Le Completed della settimana corrente restano nelle tabelle (badge Done) e non si ripetono qui.
+export const COMPLETED_DAYS: Record<Item['area'], number> = { MC: 14, SC: 7, AMS: 7 };
+export function completedWindow(st: AppState): Item[] {
+  const sal = st.deck.sal_date || parseSalLabel(st.deck.date_label) || new Date().toISOString().slice(0, 10);
+  const end = Date.parse(sal + 'T00:00:00Z'); // giorni di calendario: SAL 04/11 e 7 gg => dal 28/10 compreso
+  return st.items.filter((i) => {
+    if (!i.archived_at) return false;
+    const t = doneTime(i, new Date(end)); // GoLive date se datata (es. 28/10, Beg Oct), altrimenti data di chiusura
+    return Number.isFinite(t) && t >= end - COMPLETED_DAYS[i.area] * 86400000;
+  });
+}
 
 export type SRow = { cells: string[]; status?: Status; completed?: boolean; ams?: { t: string; tag: string }[] };
 export type PBar = { label: string; status: BarStatus; start: number; end: number; row: number; out: 'in' | 'right' | 'left' };
@@ -9,7 +23,7 @@ export type Slide =
   | { kind: 'cover' }
   | { kind: 'section'; title: string }
   | { kind: 'closing' }
-  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean }
+  | { kind: 'table'; theme: 'mc' | 'sc' | 'ams' | 'completed'; title: string; part: string; columns: Col[]; rows: SRow[]; statusCol: number; prioCol: number; legend: boolean; tier?: 0 | 1 | 2 }
   | { kind: 'pipeline'; title: string; part: string; year: number; today: number; lanes: PLane[] };
 
 const chunk = <T,>(a: T[], n: number) => {
@@ -19,29 +33,62 @@ const chunk = <T,>(a: T[], n: number) => {
 };
 const sLabel = (s: Status) => STATUS[s].label;
 
-// ---- paginazione: max 12 righe, ma anche solo quante ne stanno sopra la riga di chiusura ----
-const TABLE_W = 1190, BODY_H = 536;
-function estRowH(columns: Col[], cells: string[]) {
+// ---- paginazione: si contano tutte le voci e si riempiono le slide fino a 12 righe (almeno 11 quando i dati lo permettono) ----
+// Tre livelli di corpo: 12,5 px (preferito), 11,5 px, 11 px (minimo). Si sceglie il piu grande che tiene le righe sulla slide;
+// poi la tabella viene distribuita fino a poco sopra il footer. L'ultima slide non resta con poche righe: si riportano righe
+// dalla precedente finche questa resta >= 11.
+export type Tier = 0 | 1 | 2;
+const TABLE_W = 1190, MIN_ROWS = 11, MIN_LAST = 5;
+export const FIT_H = 586;
+export const FIT_FULL = 11; // da 11 righe in su la slide e "piena": righe distribuite fino al footer; sotto, altezza riga fissa (come sulle slide piene)
+export const FIT_ROW = 45; // altezza della tabella (intestazione inclusa) nelle slide a righe distribuite
+export const TIERS = [
+  { cap: MAX_ROWS, font: 12.5, body: 538, charW: 5.5, lh: 15.6, pad: 6, min: 28, padX: 18 },
+  { cap: MAX_ROWS, font: 11.5, body: 538, charW: 5.1, lh: 14.4, pad: 6, min: 28, padX: 18 },
+  { cap: MAX_ROWS, font: 11, body: 538, charW: 4.95, lh: 13.8, pad: 6, min: 28, padX: 18 },
+] as const;
+export function estRowH(columns: Col[], cells: string[], tier: Tier = 0, widthK = 1) {
+  const T = TIERS[tier];
   const tot = columns.reduce((a, c) => a + c.w, 0);
   let lines = 1;
   cells.forEach((t, i) => {
-    const px = (columns[i].w / tot) * TABLE_W - 16;
-    const cpl = Math.max(4, Math.floor(px / 6.4));
-    const l = String(t ?? '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
+    const px = (columns[i].w / tot) * TABLE_W - T.padX;
+    const cpl = Math.max(4, Math.floor(px / (T.charW * widthK)));
+    const l = String(t ?? '').replace(/\*\*/g, '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
     if (l > lines) lines = l;
   });
-  return Math.max(44, lines * 16 + 14);
+  return Math.max(T.min, lines * T.lh + T.pad);
 }
-function paginate<T>(items: T[], heightOf: (x: T) => number): T[][] {
+function paginate<T>(items: T[], heightOf: (x: T) => number, tier: Tier = 0, capOverride?: number): T[][] {
+  const cap = capOverride ?? TIERS[tier].cap, budget = TIERS[tier].body;
   const pages: T[][] = [];
   let cur: T[] = [], acc = 0;
   for (const it of items) {
     const h = heightOf(it);
-    if (cur.length && (cur.length >= MAX_ROWS || acc + h > BODY_H)) { pages.push(cur); cur = []; acc = 0; }
+    if (cur.length && (cur.length >= cap || acc + h > budget)) { pages.push(cur); cur = []; acc = 0; }
     cur.push(it); acc += h;
   }
   if (cur.length || !pages.length) pages.push(cur);
   return pages;
+}
+function paginateSmart<T>(items: T[], heightOf: (x: T, tier: Tier) => number): { pages: T[][]; tier: Tier } {
+  const cand = ([0, 1, 2] as Tier[]).map((tier) => {
+    const h = (x: T) => heightOf(x, tier);
+    const pages = paginate(items, h, tier);
+    // l'ultima slide non deve restare con poche righe: si spostano righe dalla precedente (che resta >= MIN_ROWS)
+    for (let i = pages.length - 1; i > 0; i--) {
+      while (pages[i].length < MIN_LAST && pages[i - 1].length > MIN_ROWS) {
+        const mv = pages[i - 1][pages[i - 1].length - 1];
+        const hh = [mv, ...pages[i]].reduce((a, x) => a + h(x), 0);
+        if (hh > TIERS[tier].body) break;
+        pages[i - 1].pop(); pages[i].unshift(mv);
+      }
+    }
+    const shortN = pages.length > 1 ? pages.filter((p) => p.length < MIN_ROWS).length : 0;
+    return { pages, tier, key: [shortN, pages.length, tier] };
+  });
+  cand.sort((x, y) => x.key[0] - y.key[0] || x.key[1] - y.key[1] || x.key[2] - y.key[2]);
+  return { pages: cand[0].pages, tier: cand[0].tier };
 }
 
 export function todayPos(d = new Date()) {
@@ -87,21 +134,21 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   const slides: Slide[] = [{ kind: 'cover' }, { kind: 'section', title: st.deck.subtitle || 'Status Update' }];
 
   const cellsOf = (theme: 'mc' | 'sc', it: Item, n: string) => {
-    const act = it.activity || sLabel(it.status);
+    const act = it.status === 'completed' ? 'Done' : it.activity || sLabel(it.status); // completed: sempre "Done" (badge in slide)
     return theme === 'mc'
-      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
-      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.release_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
+      ? [n, it.type, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act]
+      : [n, it.description, it.priority, it.requested_date, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, act];
   };
   const tableSlides = (theme: 'mc' | 'sc', title: string, items: Item[]) => {
     const cols = COLS[theme];
-    const pages = paginate(items, (it) => estRowH(cols, cellsOf(theme, it, '00')));
+    const { pages, tier } = paginateSmart(items, (it, t) => estRowH(cols, cellsOf(theme, it, '00'), t));
     let n0 = 0;
     pages.forEach((page, p) => {
       const rows: SRow[] = page.map((it, k) => ({ cells: cellsOf(theme, it, String(n0 + k + 1)), status: it.status }));
       n0 += page.length;
       slides.push({
         kind: 'table', theme, title, part: pages.length > 1 ? `${p + 1}/${pages.length}` : '', columns: cols, rows,
-        statusCol: cols.length - 1, prioCol: cols.findIndex((c) => c.name === 'Priorità'), legend: true,
+        statusCol: cols.length - 1, prioCol: cols.findIndex((c) => c.name === 'Priorità'), legend: true, tier,
       });
     });
   };
@@ -112,7 +159,18 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   // Ticket AMS: un unico blocco (una sola riga/ID) con l'elenco dei ticket, come nella slide originale
   const ams = active('AMS');
   if (ams.length) {
-    const pages = chunk(ams, 18);
+    // blocco AMS: una sola slide finche i ticket entrano (circa 24 righe), poi pagine bilanciate (mai 1-2 ticket da soli)
+    const tagOf = (i: Item) => (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '');
+    const amsH = (i: Item) => Math.max(1, Math.ceil((`${i.code ? i.code + ' - ' : ''}${i.description} (${tagOf(i)})`).length / 105)) * 19.5;
+    const AMS_BUDGET = 470;
+    const fillPages = (cap: number) => {
+      const out: Item[][] = []; let cur: Item[] = [], acc = 0;
+      for (const it of ams) { const h = amsH(it); if (cur.length && (cur.length >= cap || acc + h > AMS_BUDGET)) { out.push(cur); cur = []; acc = 0; } cur.push(it); acc += h; }
+      if (cur.length) out.push(cur);
+      return out;
+    };
+    let pages = fillPages(26);
+    if (pages.length > 1) { const bal = fillPages(Math.ceil(ams.length / pages.length)); if (bal.length === pages.length) pages = bal; }
     pages.forEach((page, p) => {
       const worst = SEV.find((s) => page.some((i) => i.status === s)) ?? (page.every((i) => i.status === 'completed') ? 'completed' : 'ontrack');
       const contract = page.find((i) => i.contract)?.contract ?? '';
@@ -121,8 +179,8 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
         columns: COLS.amsblock, statusCol: 4, prioCol: -1, legend: true,
         rows: [{
           status: worst,
-          cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, sLabel(worst)],
-          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '') })),
+          cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, worst === 'completed' ? 'Done' : 'OnGoing'], // Activity Status AMS: OnGoing per tutti gli stati tranne Done
+          ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: tagOf(i) })),
         }],
       });
     });
@@ -148,14 +206,14 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
   );
 
   if (includeArchive) {
-    const arch = st.items.filter((i) => i.archived_at).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
+    const arch = completedWindow(st).sort((a, b) => +new Date(b.closed_at ?? b.archived_at!) - +new Date(a.closed_at ?? a.archived_at!));
     if (arch.length) {
-      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.type, it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
-      const pages = paginate(arch, (it) => estRowH(COLS.completed, cc(it)));
+      const cc = (it: Item) => [it.area === 'AMS' ? 'AMS' : it.area === 'SC' ? 'CRM' : 'MC', it.area === 'AMS' ? `${it.code} – ${it.description}` : it.description, it.priority, it.golive_date, it.owner, fmtEstimate(it.estimate), it.contract, 'Done'];
+      const { pages, tier } = paginateSmart(arch, (it, t) => estRowH(COLS.completed, cc(it), t));
       pages.forEach((page, p, all) => {
         slides.push({
           kind: 'table', theme: 'completed', title: 'Completed Activities', part: all.length > 1 ? `${p + 1}/${all.length}` : '',
-          columns: COLS.completed, statusCol: 7, prioCol: 2, legend: false,
+          columns: COLS.completed, statusCol: 7, prioCol: 2, legend: false, tier,
           rows: page.map((it) => ({ completed: true, status: 'completed' as Status, cells: cc(it) })),
         });
       });

@@ -1,7 +1,9 @@
 import { jwtVerify } from 'jose';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC = ['/login', '/api/login'];
+const PUBLIC = ['/login', '/api/login', '/accesso-riservato'];
+// route di backup in sola lettura accessibili anche con Bearer token (verifica fatta nella route)
+const TOKEN_PATHS = ['/api/export/backup', '/api/admin/backup-db'];
 const PUBLIC_GET = ['/api/branding'];
 
 export async function middleware(req: NextRequest) {
@@ -14,6 +16,7 @@ export async function middleware(req: NextRequest) {
   }
   if (PUBLIC.some((p) => pathname === p)) return NextResponse.next();
   if (req.method === 'GET' && PUBLIC_GET.includes(pathname)) return NextResponse.next();
+  if (req.method === 'GET' && TOKEN_PATHS.includes(pathname) && (req.headers.get('authorization') ?? '').startsWith('Bearer ')) return NextResponse.next();
   const t = req.cookies.get('sal_session')?.value;
   let ok = false;
   if (t && process.env.SESSION_SECRET) {

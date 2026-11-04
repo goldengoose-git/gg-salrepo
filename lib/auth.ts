@@ -10,13 +10,15 @@ const key = () => {
 };
 
 export async function createSession(me: Me) {
-  const token = await new SignJWT({ ...me })
+  const admin = me.role === 'ADMIN'; // sessione Admin All piu corta: 8 ore
+  const { iat: _iat, ...claims } = me;
+  const token = await new SignJWT({ ...claims })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('2d')
+    .setExpirationTime(admin ? '8h' : '2d')
     .sign(key());
   (await cookies()).set(COOKIE, token, {
-    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 2,
+    httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: admin ? 60 * 60 * 8 : 60 * 60 * 24 * 2,
   });
 }
 export async function destroySession() {
@@ -27,7 +29,7 @@ export async function getSession(): Promise<Me | null> {
   if (!t) return null;
   try {
     const { payload } = await jwtVerify(t, key());
-    return { username: String(payload.username), role: payload.role as Me['role'], name: String(payload.name) };
+    return { username: String(payload.username), role: payload.role as Me['role'], name: String(payload.name), iat: typeof payload.iat === 'number' ? payload.iat : undefined };
   } catch {
     return null;
   }

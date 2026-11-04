@@ -7,7 +7,7 @@ import { Ic } from './icons';
 
 export default function ExportModal({ onClose }: { onClose: () => void }) {
   const { state, toast } = useApp();
-  const [arch, setArch] = useState(false);
+  const [arch, setArch] = useState(true);
   const [busy, setBusy] = useState('');
   const n = state!.items;
   async function dl(kind: 'pptx' | 'xlsx') {
@@ -30,7 +30,7 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
           <button className="btn" style={{ width: '100%', justifyContent: 'center', height: 44 }} disabled={!!busy} onClick={() => dl('pptx')}><Ic n="dl" />{busy === 'pptx' ? 'Genero…' : 'Genera PPTX'}</button>
         </div>
         <div style={{ gridColumn: '1/3', border: '1px solid var(--line3)', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} />Includi pagine Completed Activities (archivio)</label>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} />Includi Completed Activities (MC ultimi 14 gg, SC e AMS ultimi 7 gg dal SAL)</label>
           <span className="sp" />
           <span className="muted">MC {n.filter((i) => i.area === 'MC' && !i.archived_at).length} · SC {n.filter((i) => i.area === 'SC' && !i.archived_at).length} · AMS {n.filter((i) => i.area === 'AMS' && !i.archived_at).length}</span>
           <button className="btn" disabled={!!busy} onClick={() => dl('xlsx')}><Ic n="dl" />{busy === 'xlsx' ? '…' : 'XLSX archivio e ticket'}</button>

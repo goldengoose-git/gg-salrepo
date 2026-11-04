@@ -8,7 +8,7 @@ import { Ic } from '@/components/icons';
 
 export default function Azioni() {
   const { me } = useApp();
-  const [tab, setTab] = useState<'MC' | 'SC'>(me.role);
+  const [tab, setTab] = useState<'MC' | 'SC'>(me.role === 'SC' ? 'SC' : 'MC');
   const [imp, setImp] = useState(false);
   const [rest, setRest] = useState(false);
   return (

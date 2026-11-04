@@ -4,11 +4,13 @@ import { useApp } from '@/components/AppShell';
 import ItemTable from '@/components/ItemTable';
 import Modal from '@/components/Modal';
 import { Ic } from '@/components/icons';
+import JiraImportModal from '@/components/JiraImportModal';
 import { api } from '@/lib/client';
 
 export default function Ticket() {
   const { me, reload, toast } = useApp();
   const [paste, setPaste] = useState(false);
+  const [jira, setJira] = useState(false);
   const [txt, setTxt] = useState('');
   const [err, setErr] = useState('');
   // una riga per ticket: "AC-1234 - Subject (stato)" oppure "AC-1234<TAB>Subject<TAB>Owner"
@@ -36,9 +38,12 @@ export default function Ticket() {
   return (
     <>
       <div className="top"><h2>Ticket AMS</h2><span className="sp" />
-        {me.role === 'SC' && <button className="btn" onClick={() => setPaste(true)}><Ic n="cp" />Incolla elenco</button>}</div>
+        {(me.role === 'SC' || me.role === 'ADMIN') && <>
+          <button className="btn pri" onClick={() => setJira(true)}><Ic n="up" />Importa CSV Jira</button>
+          <button className="btn" onClick={() => setPaste(true)}><Ic n="cp" />Incolla elenco</button></>}</div>
       <div className="body"><ItemTable area="AMS" prefix="AC" label="ticket" />
         <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>Un ticket con testo &quot;(done)&quot; a fine subject, o con Activity status Completed, passa in Archivio (Completed Activities).</div></div>
+      {jira && <JiraImportModal onClose={() => setJira(false)} />}
       {paste && (
         <Modal title="Incolla elenco ticket" onClose={() => setPaste(false)} width={680}
           footer={<><span className="sp" />{err && <span className="err">{err}</span>}<button className="btn" onClick={() => setPaste(false)}>Annulla</button>

@@ -1,11 +1,12 @@
 import { q } from '@/lib/db';
-import { audit, isErr, json, needUser } from '@/lib/http';
+import { audit, fail, isErr, json, needUser } from '@/lib/http';
 import { currentDeck } from '@/lib/state';
 
 // POST { done: boolean } -> il team dell'utente segna (o riapre) l'editing della settimana corrente
 export async function POST(req: Request) {
   const me = await needUser();
   if (isErr(me)) return me;
+  if (me.role === 'ADMIN') return fail('Lo stato editing e dei team MC e SC', 403);
   const b = await req.json().catch(() => ({}));
   const deck = await currentDeck();
   if (b.done === false) await q('delete from team_status where deck_id = $1 and team = $2', [deck.id, me.role]);

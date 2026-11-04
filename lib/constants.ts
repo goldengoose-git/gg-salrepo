@@ -1,4 +1,4 @@
-export type Role = 'MC' | 'SC';
+export type Role = 'MC' | 'SC' | 'ADMIN';
 export type Area = 'MC' | 'SC' | 'AMS';
 export type Status = 'ontrack' | 'delay' | 'blocked' | 'onhold' | 'completed';
 export type AmsStatus = 'new' | 'wip' | 'waiting' | 'testing' | 'ready' | 'done';
@@ -48,21 +48,20 @@ export const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 export const LANES: Lane[] = ['SFMC', 'CROSS', 'SFSC'];
 export const MAX_ROWS = 12;
 
-export const areasFor = (r: Role): Area[] => (r === 'MC' ? ['MC'] : ['SC', 'AMS']);
-export const lanesFor = (r: Role): Lane[] => (r === 'MC' ? ['SFMC', 'CROSS'] : ['SFSC']);
+export const areasFor = (r: Role): Area[] => (r === 'ADMIN' ? ['MC', 'SC', 'AMS'] : r === 'MC' ? ['MC'] : ['SC', 'AMS']);
+export const lanesFor = (r: Role): Lane[] => (r === 'ADMIN' ? ['SFMC', 'CROSS', 'SFSC'] : r === 'MC' ? ['SFMC', 'CROSS'] : ['SFSC']);
 
 export type Col = { name: string; w: number; align: 'l' | 'c' };
 export const COLS: Record<'mc' | 'sc' | 'ams' | 'amsblock' | 'completed', Col[]> = {
   mc: [
-    { name: 'ID', w: 5, align: 'c' }, { name: 'Type', w: 8, align: 'c' }, { name: 'Description', w: 24, align: 'l' },
+    { name: 'ID', w: 5, align: 'c' }, { name: 'Type', w: 8, align: 'c' }, { name: 'Description', w: 32, align: 'l' },
     { name: 'Priorità', w: 7, align: 'c' }, { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' },
-    { name: 'Release Date', w: 8, align: 'c' },
     { name: 'Owner', w: 10, align: 'l' }, { name: 'Stima', w: 6, align: 'c' }, { name: 'Contract Type & Status', w: 11, align: 'l' },
     { name: 'Activity Status', w: 10, align: 'c' },
   ],
   sc: [
-    { name: 'ID', w: 5, align: 'c' }, { name: 'Description', w: 29, align: 'l' }, { name: 'Priorità', w: 7, align: 'c' },
-    { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' }, { name: 'Release Date', w: 8, align: 'c' }, { name: 'Owner', w: 10, align: 'l' },
+    { name: 'ID', w: 5, align: 'c' }, { name: 'Description', w: 37, align: 'l' }, { name: 'Priorità', w: 7, align: 'c' },
+    { name: 'Requested date', w: 8, align: 'c' }, { name: 'GoLive Date', w: 8, align: 'c' }, { name: 'Owner', w: 10, align: 'l' },
     { name: 'Stima', w: 6, align: 'c' }, { name: 'Contract Type & Status', w: 12, align: 'l' }, { name: 'Activity Status', w: 10, align: 'c' },
   ],
   ams: [

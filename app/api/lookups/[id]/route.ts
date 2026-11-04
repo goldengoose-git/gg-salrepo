@@ -32,9 +32,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (nv === old) return json({ ok: true, updated: 0 });
 
   const deck = await currentDeck();
+  // Admin All puo estendere la bonifica a tutte le settimane; gli altri solo alla corrente
+  const allWeeks = me.role === 'ADMIN' && b.scope === 'all';
+  const deckIds = allWeeks ? (await q<{ id: string }>('select id from decks')).map((d) => d.id) : [deck.id];
   let updated = 0;
   if (kind === 'contract_label') {
-    const rows = await q<{ id: string; contract: string }>(`select id, contract from items where deck_id = $1 and area <> 'AMS' and contract <> ''`, [deck.id]);
+    const rows = await q<{ id: string; contract: string }>(`select id, contract from items where deck_id = any($1::uuid[]) and area <> 'AMS' and contract <> ''`, [deckIds]);
     for (const it of rows) {
       const c = parseContract(it.contract);
       if (c.label !== old) continue;
@@ -42,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       updated++;
     }
   } else if (kind === 'owner') {
-    const rows = await q<{ id: string; owner: string }>(`select id, owner from items where deck_id = $1 and area <> 'AMS' and owner <> ''`, [deck.id]);
+    const rows = await q<{ id: string; owner: string }>(`select id, owner from items where deck_id = any($1::uuid[]) and area <> 'AMS' and owner <> ''`, [deckIds]);
     for (const it of rows) {
       const list = parseOwners(it.owner);
       if (!list.includes(old)) continue;
@@ -53,14 +56,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } else {
     const area = kind === 'type_mc' ? 'MC' : 'SC';
     const res = await q<{ id: string }>(
-      `update items set type = $1, updated_by = $2, updated_at = now() where deck_id = $3 and area = $4 and type = $5 returning id`,
-      [nv, me.username, deck.id, area, old]
+      `update items set type = $1, updated_by = $2, updated_at = now() where deck_id = any($3::uuid[]) and area = $4 and type = $5 returning id`,
+      [nv, me.username, deckIds, area, old]
     );
     updated = res.length;
   }
   const exists = await q<{ id: string }>('select id from lookups where kind = $1 and value = $2', [kind, nv]);
   if (exists[0]) await q('delete from lookups where id = $1', [id]); // unione con il valore esistente
   else await q('update lookups set value = $1 where id = $2', [nv, id]);
-  await audit(me, 'rename', 'lookup', id, { kind, from: old, to: nv, updated });
+  await audit(me, 'rename', 'lookup', id, { kind, from: old, to: nv, updated, allWeeks });
   return json({ ok: true, updated, merged: !!exists[0] });
 }

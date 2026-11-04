@@ -62,7 +62,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         {sum && <div className="card" style={{ padding: 14, background: 'var(--bg)' }}>
           <div className="lab" style={{ marginBottom: 8 }}>Nel file</div>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}><span><b>{sum.mc}</b> azioni MC</span><span><b>{sum.sc}</b> azioni SC</span><span><b>{sum.ams}</b> ticket AMS</span><span><b>{sum.archived}</b> in archivio</span><span><b>{sum.bars}</b> barre timeline</span></div>
-          <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>Come {me.role} verranno importate solo le voci della tua area ({me.role === 'MC' ? 'MC; lane SFMC e CROSS' : 'SC e AMS; lane SFSC'}).</div>
+          <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>Come {me.role === 'ADMIN' ? 'Admin All' : me.role} verranno importate solo le voci della tua area ({me.role === 'ADMIN' ? 'tutte le aree e le lane' : me.role === 'MC' ? 'MC; lane SFMC e CROSS' : 'SC e AMS; lane SFSC'}).</div>
         </div>}
         <div className="f"><label className="lab">Cosa importare</label><div style={{ display: 'flex', gap: 10 }}>
           {Opt('all', 'Voci e timeline', 'Tutto ciò che è tuo', scope, () => setScope('all'))}

@@ -29,6 +29,7 @@ export default function Archivio() {
         }}><Ic n="up" />Recupera da settimane precedenti</button>
         <a className="btn" href="/api/export/backup"><Ic n="dl" />Backup completo</a>
         <button className="btn" onClick={() => setRest(true)}><Ic n="undo" />Ripristina da backup</button>
+        <a className="btn" href="/print/completati?days=14&auto=1" target="_blank" rel="noreferrer" title="Elenco di tutte le voci completate negli ultimi 14 giorni, da tutte le settimane, in PDF"><Ic n="dl" />PDF completati 14 gg</a>
         <button className="btn" onClick={() => download('/api/export/xlsx', 'archivio.xlsx').catch((e) => toast(e.message))}><Ic n="dl" />Esporta XLSX</button></div>
       <div className="body">
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'center' }}>

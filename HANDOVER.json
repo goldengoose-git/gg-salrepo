@@ -1,0 +1,159 @@
+{
+  "format": "sal-builder-handover",
+  "version": "2026-11-04",
+  "app": {
+    "name": "Weekly SAL Builder",
+    "client": "Golden Goose",
+    "repo": "goldengoose-git/gg-salrepo",
+    "stack": [
+      "Next.js 15 (app router)",
+      "React 19",
+      "TypeScript strict",
+      "Neon Postgres (HTTP driver)",
+      "Vercel",
+      "Vercel Blob"
+    ],
+    "users": {
+      "MC": {
+        "areas": [
+          "MC"
+        ],
+        "lanes": [
+          "SFMC",
+          "CROSS"
+        ]
+      },
+      "SC": {
+        "areas": [
+          "SC",
+          "AMS"
+        ],
+        "lanes": [
+          "SFSC"
+        ]
+      },
+      "ADMIN": {
+        "areas": [
+          "MC",
+          "SC",
+          "AMS"
+        ],
+        "lanes": [
+          "SFMC",
+          "CROSS",
+          "SFSC"
+        ],
+        "login": "/accesso-riservato (nascosto, user admin, sessione 8h)"
+      }
+    }
+  },
+  "data_model": {
+    "tables": {
+      "decks": "una riga per settimana; l'app usa il piu recente (created_at)",
+      "items": "voci MC/SC/AMS con status, archived_at, closed_at, release_date, golive_date, ams_status",
+      "pipeline_bars": "barre timeline con lane, start_m, end_m, row",
+      "snapshots": "istantanee",
+      "lookups": "liste valori",
+      "settings": "impostazioni",
+      "team_status": "stato team",
+      "audit_log": "audit",
+      "login_attempts": "rate limit login"
+    },
+    "status_mc_sc": [
+      "ontrack",
+      "delay",
+      "blocked",
+      "onhold",
+      "completed"
+    ],
+    "status_ams_jira": {
+      "new": "ontrack",
+      "wip": "ontrack",
+      "waiting": "delay",
+      "testing": "ontrack",
+      "ready": "ontrack",
+      "done": "completed"
+    }
+  },
+  "rules": {
+    "completed": [
+      "Completed/Done resta attivo nella week corrente (solo closed_at)",
+      "Nuova settimana (/api/deck/duplicate) copia tutto e inserisce gia archiviate le voci completed",
+      "Cambio stato da completed azzera archived_at e closed_at",
+      "Import Jira: ticket presente che diventa Done resta attivo; ticket Done nuovi entrano archiviati"
+    ]
+  },
+  "features": [
+    "tabelle per area con Rilascio e GoLive",
+    "timeline con layoutBars",
+    "anteprima, slide e PPTX",
+    "import JSON/CSV/Jira (merge per codice AMS)",
+    "export CSV/XLSX/backup JSON",
+    "restore da backup (/api/restore, additivo o overwrite)",
+    "recover-archive (?dryRun=1)",
+    "Admin All: backup JSON/XLS/DB completo (/api/admin/backup-db, .json.gz in streaming)",
+    "Admin All: colori label solo UI (settings.ui_colors), elenchi su tutte le settimane, normalizza date solo settimana corrente con undo",
+    "Ticket AMS: import CSV Jira con anteprima",
+    "scripts/weekly-check.mjs: verifica coerenza settimanale",
+    "Admin All: colori anche per OPEX/CAPEX (settings.ui_colors.contract), solo UI interna",
+    "Slide tabella (MC, SC, Completed): max 12 righe, almeno 11 sulle slide piene, corpo 12,5 px (11,5 / 11 se le voci sono lunghe, mai sotto 11), righe distribuite fino al footer ridotto sulle slide piene (>=11 righe); sotto 11 righe altezza riga fissa 45 px. Logo destro non piu sulle slide tabella. PPTX: 9,25/8,5/8,25 pt, stesse regole. AMS invariato",
+    "Slide AMS: Activity Status = OnGoing per tutti gli stati tranne Done (Done solo se tutti i ticket del blocco sono completed); colore riga invariato",
+    "PPTX: tutto in Montserrat (Regular/SemiBold/Bold/ExtraBold), misure px*0,75 pt come anteprima/PDF; font da installare dalla cartella fonts/ (OFL)",
+    "Presenta: /presenta, presentazione a schermo intero per tutti (frecce/spazio/clic, F schermo intero, G griglia, B nero, Esc), cursore punto rosso, ?s=N, ?archive=0"
+  ],
+  "security": [
+    "bcryptjs + JWT cookie sal_session (2 giorni)",
+    "middleware con route pubbliche limitate e check Origin",
+    "ruoli server-side",
+    "login_attempts rate limit",
+    "Turnstile opzionale",
+    "CSP/header in next.config.mjs",
+    "ruolo ADMIN: needAdmin() lato server, limiti login 5/15min, BACKUP_TOKEN opzionale per i soli backup in lettura"
+  ],
+  "deploy": {
+    "steps": [
+      "rsync dello zip nel repo escludendo .env.local .DS_Store node_modules .next .git",
+      "git status (.env.local non deve comparire)",
+      "git add -A; git commit; git push origin main",
+      "attendere Ready su Vercel e ricaricare l'app"
+    ],
+    "rules": [
+      "npm run db:migrate PRIMA del deploy se cambia lo schema",
+      "backup branch Neon con auto-delete Never",
+      "segreti mai in chat o commit"
+    ],
+    "known_issues": {
+      "git push 503/P3P": "proxy aziendale: hotspot o VPN off",
+      "Everything up-to-date dopo errore": "push gia arrivato: git log origin/main + Vercel"
+    },
+    "preview_flow": [
+      "tag backup-pre-admin-all su main (13a6049), branch release/admin-all",
+      "Neon: branch test-admin-all; db:migrate da .env.local con DATABASE_URL del branch e ADMIN_PASSWORD alfanumerica (no # $ !: node --env-file tronca)",
+      "Vercel: DATABASE_URL e SESSION_SECRET come variabili Preview solo per il branch release/admin-all (il branch deve esistere su GitHub prima)",
+      "login admin: <url preview>/accesso-riservato (nessun link nell'app)",
+      "produzione: db:migrate sul DB prod, branch Neon di backup (auto-delete Never), merge su main, push, attendere Ready"
+    ]
+  },
+  "status": {
+    "production_commit": "13a6049 (main, tag backup-pre-admin-all)",
+    "preview": "branch release/admin-all, ultimo commit pushato ffc245f; pacchetti successivi v2-v6 da copiare (v6 = ultima, include logo, 11-12 righe, 12,5px, OPEX/CAPEX)",
+    "done": [
+      "Admin All, backup JSON/XLS/DB, colori UI, normalizza date, import Jira, sidebar evidenziata, weekly-check.mjs",
+      "slide: logo destro via, max 12 righe, >=11 sulle piene, righe distribuite, altezza fissa sulle corte",
+      "colori OPEX/CAPEX in Admin"
+    ],
+    "pending": [
+      "push v6 su release/admin-all e test del Preview (login admin, backup, import Jira.csv 366 righe, normalizza + annulla, colori solo UI, slide e PPTX)",
+      "verifica visiva PPTX in PowerPoint (righe distribuite)",
+      "produzione: db:migrate, backup Neon, merge su main",
+      "ruotare la password neondb_owner (esposta in chat/screenshot; i branch Neon la condividono) e aggiornare Vercel Production/Preview, .env.local, Redeploy",
+      "pulizia: eliminare branch Neon test-admin-all e variabili Preview; usare scripts/weekly-check.mjs ogni settimana",
+      "aggiornare il documento funzionale"
+    ],
+    "decisions": [
+      "colori solo UI interna (non slide/PPTX/PDF)",
+      "normalizza solo settimana corrente",
+      "backup Neon branch manuale a cura dell'utente"
+    ]
+  }
+}

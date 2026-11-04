@@ -1,6 +1,7 @@
+import type { CSSProperties } from 'react';
 import { BAR_STATUS, STATUS, type BarStatus, type Status } from '@/lib/constants';
 import { Prio } from '@/lib/prio';
-import { PIPE, pipePitch, type Slide } from '@/lib/slides';
+import { FIT_FULL, PIPE, pipePitch, TIERS, type Slide } from '@/lib/slides';
 import type { Deck } from '@/lib/types';
 
 const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -42,11 +43,10 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
   if (s.kind === 'table') {
     const tot = s.columns.reduce((a, c) => a + c.w, 0);
     return (
-      <div className="slide">
+      <div className={'slide' + (s.theme !== 'ams' ? ' fit' + (s.rows.length < FIT_FULL ? ' short' : '') : '')} style={s.theme !== 'ams' ? ({ '--fs': `${TIERS[s.tier ?? 0].font}px` } as CSSProperties) : undefined}>
         {deck.bg_table_url && <div className="bgimg" style={{ backgroundImage: `url(${deck.bg_table_url})` }} />}
         <div className="edge" style={s.theme === 'completed' ? { background: '#7135A8' } : undefined} />
         <div className="ttl">{s.title}{s.part && <span className="part">({s.part})</span>}</div>
-        {deck.logo_right_url && <img className="logoR" src={deck.logo_right_url} alt="" />}
         {s.legend && <div className="legend">{(['ontrack', 'delay', 'blocked', 'onhold', ...(s.rows.some((r) => r.status === 'completed') ? ['completed' as const] : [])] as Status[]).map((k) => <span key={k}><i style={{ background: STATUS[k].color }} />{STATUS[k].label}</span>)}</div>}
         <table>
           <colgroup>{s.columns.map((c, i) => <col key={i} style={{ width: `${(c.w / tot) * 100}%` }} />)}</colgroup>
@@ -58,7 +58,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
                 if (ci === 0 && st && !r.ams)
                   return <td key={ci} className={s.theme === 'completed' ? 'c' : 'idc'} style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, fontWeight: 800 }}>{t}</td>;
                 if (ci === 0 && st)
-                  return <td key={ci} className="idc" style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, verticalAlign: 'top', paddingTop: 12 }}>{t}</td>;
+                  return <td key={ci} className="idc" style={{ background: st.tint, color: st.ink, boxShadow: `inset 7px 0 0 ${st.stripe}`, verticalAlign: 'middle' }}>{t}</td>;
                 if (r.ams && ci === 1)
                   return (
                     <td key={ci} className="amscell">
@@ -67,7 +67,7 @@ export function SlideView({ s, deck, no }: { s: Slide; deck: Deck; no?: number }
                     </td>
                   );
                 if (ci === s.prioCol) return <td key={ci} className="c"><Prio p={t} size={15} /></td>;
-                if (ci === s.statusCol) return <td key={ci} className="act">{t}</td>;
+                if (ci === s.statusCol) return <td key={ci} className="act">{r.status === 'completed' ? <span className="donebadge">✓ Done</span> : t}</td>;
                 return <td key={ci} className={s.columns[ci].align === 'c' ? 'c' : ''} dangerouslySetInnerHTML={rich(t)} />;
               })}</tr>
             );
