@@ -67,3 +67,6 @@ Salva i file e `report.md` in `backups/AAAA-MM-GG/` (cartella ignorata da git). 
 - Login admin: il blocco scatta dopo 5 tentativi falliti in 15 minuti da qualsiasi IP. Per sbloccare, svuota `login_attempts` da Neon. Il captcha Turnstile non è attivo su `/accesso-riservato`.
 - Il backup DB contiene gli hash delle password: conservalo come un segreto.
 - Il token `BACKUP_TOKEN` abilita solo il download dei due backup in sola lettura; per revocarlo togli la variabile e fai Redeploy.
+
+## Font del PPTX
+Il PPTX usa solo Montserrat, richiamato per nome: installa i 4 file Montserrat della cartella `fonts/` (vedi `fonts/LEGGIMI.md`) sul computer che apre il PPTX, altrimenti PowerPoint li sostituisce. Il PDF non ha questo problema.

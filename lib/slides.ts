@@ -33,13 +33,13 @@ export const TIERS = [
   { cap: MAX_ROWS, font: 11.5, body: 538, charW: 5.1, lh: 14.4, pad: 6, min: 28, padX: 18 },
   { cap: MAX_ROWS, font: 11, body: 538, charW: 4.95, lh: 13.8, pad: 6, min: 28, padX: 18 },
 ] as const;
-function estRowH(columns: Col[], cells: string[], tier: Tier = 0) {
+export function estRowH(columns: Col[], cells: string[], tier: Tier = 0, widthK = 1) {
   const T = TIERS[tier];
   const tot = columns.reduce((a, c) => a + c.w, 0);
   let lines = 1;
   cells.forEach((t, i) => {
     const px = (columns[i].w / tot) * TABLE_W - T.padX;
-    const cpl = Math.max(4, Math.floor(px / T.charW));
+    const cpl = Math.max(4, Math.floor(px / (T.charW * widthK)));
     const l = String(t ?? '').replace(/\*\*/g, '').split('\n').reduce((a, seg) => a + Math.max(1, Math.ceil(seg.length / cpl)), 0);
     if (l > lines) lines = l;
   });
@@ -154,7 +154,7 @@ export function buildSlides(st: AppState, includeArchive = false): Slide[] {
         columns: COLS.amsblock, statusCol: 4, prioCol: -1, legend: true,
         rows: [{
           status: worst,
-          cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, sLabel(worst)],
+          cells: [String(scItems.length + 1), 'Ticket AMS', '', contract, worst === 'completed' ? 'Done' : 'OnGoing'], // Activity Status AMS: OnGoing per tutti gli stati tranne Done
           ams: page.map((i) => ({ t: `${i.code ? i.code + ' - ' : ''}${i.description}`, tag: (i.ams_status ? AMS_STATUS[i.ams_status].label : i.activity || sLabel(i.status)) + (i.golive_date ? ` – GoLive ${i.golive_date}` : '') })),
         }],
       });
