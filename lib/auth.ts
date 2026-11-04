@@ -11,7 +11,8 @@ const key = () => {
 
 export async function createSession(me: Me) {
   const admin = me.role === 'ADMIN'; // sessione Admin All piu corta: 8 ore
-  const token = await new SignJWT({ ...me })
+  const { iat: _iat, ...claims } = me;
+  const token = await new SignJWT({ ...claims })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(admin ? '8h' : '2d')
@@ -28,7 +29,7 @@ export async function getSession(): Promise<Me | null> {
   if (!t) return null;
   try {
     const { payload } = await jwtVerify(t, key());
-    return { username: String(payload.username), role: payload.role as Me['role'], name: String(payload.name) };
+    return { username: String(payload.username), role: payload.role as Me['role'], name: String(payload.name), iat: typeof payload.iat === 'number' ? payload.iat : undefined };
   } catch {
     return null;
   }

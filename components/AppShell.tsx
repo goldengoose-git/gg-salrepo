@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import type { AppState, Me } from '@/lib/types';
+import type { EnvInfo } from '@/lib/env-info';
 import { Ic } from './icons';
 import ThemeToggle from './ThemeToggle';
 import TeamStrip from './TeamStrip';
@@ -29,7 +30,27 @@ const ADMIN_NAV = [
 ];
 const isOn = (path: string, href: string) => path === href || path.startsWith(href + '/');
 
-export default function AppShell({ me, children }: { me: Me; children: React.ReactNode }) {
+const ENV_NAME: Record<string, string> = { production: 'PRODUZIONE', preview: 'PREVIEW / TEST', development: 'SVILUPPO', local: 'LOCALE' };
+function EnvBar({ me, env }: { me: Me; env: EnvInfo }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
+  const since = me.iat ? me.iat * 1000 : null;
+  const mins = since ? Math.max(0, Math.floor((now - since) / 60000)) : null;
+  const dur = mins === null ? '' : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${mins % 60} min`;
+  const prod = env.env === 'production';
+  const fmt = (t: number) => new Date(t).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return (
+    <div className="noprint" role="status" style={{ background: prod ? '#B3261E' : env.env === 'preview' ? '#B26A00' : '#2F5D8A', color: '#fff', font: '600 12.5px Montserrat, sans-serif', padding: '6px 24px', display: 'flex', gap: '4px 18px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <b style={{ letterSpacing: '.04em' }}>{ENV_NAME[env.env] ?? env.env.toUpperCase()}</b>
+      {env.gitBranch && <span>branch: {env.gitBranch}{env.commit ? ` @ ${env.commit}` : ''}</span>}
+      {me.role === 'ADMIN' && <span>DB: {env.dbEndpoint}{env.dbLabel ? ` (${env.dbLabel})` : ''}</span>}
+      <span>utente: {me.name} ({me.username}, {me.role})</span>
+      {since && <span>login dal {fmt(since)} · da {dur}</span>}
+    </div>
+  );
+}
+
+export default function AppShell({ me, env, children }: { me: Me; env: EnvInfo; children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
   const [msg, setMsg] = useState('');
   const path = usePathname();
@@ -70,7 +91,7 @@ export default function AppShell({ me, children }: { me: Me; children: React.Rea
             <button onClick={async () => { await api('/api/logout', 'POST'); router.push('/login'); router.refresh(); }}>Esci</button>
           </div>
         </aside>
-        <div className="main">{state ? <>{me.role !== 'ADMIN' && (path.startsWith('/azioni') || path.startsWith('/ticket')) && <TeamStrip />}{children}</> : <div className="body muted">Caricamento…</div>}</div>
+        <div className="main"><EnvBar me={me} env={env} />{state ? <>{me.role !== 'ADMIN' && (path.startsWith('/azioni') || path.startsWith('/ticket')) && <TeamStrip />}{children}</> : <div className="body muted">Caricamento…</div>}</div>
       </div>
       {msg && <div className="toast">{msg}</div>}
     </C.Provider>

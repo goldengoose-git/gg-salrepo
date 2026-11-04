@@ -47,3 +47,4 @@ Dettagli tecnici e regole dati: `HANDOVER.json`, `DEPLOY.md`.
 - **Nuova settimana** richiede export riuscito (409 altrimenti; solo ADMIN puo forzare con `force:true` via API). Admin: pulsante "Riesporta" in Anteprima (`POST /api/deck/export`).
 - **Completed Activities** (anteprima, PDF, PPTX, Presenta): solo voci archiviate con `closed_at` negli ultimi 14 gg (MC) / 7 gg (SC, AMS) dalla data SAL; le Completed della settimana corrente restano nelle tabelle. Presenta le include di default (`?archive=0` le esclude); toggle export acceso di default.
 - Import Jira: `closed_at` da *Resolved* (fallback *Updated*).
+- v12b: banda in alto con ambiente (Produzione/Preview/Locale), branch git e commit (variabili Vercel), endpoint DB Neon (solo Admin; etichetta facoltativa `SAL_DB_LABEL`), utente e orario di login (`iat` del JWT).

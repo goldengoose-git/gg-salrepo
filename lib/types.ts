@@ -23,4 +23,4 @@ export type SnapshotRow = { id: string; week_label: string; created_by: string |
 export type Lookup = { id: string; kind: 'type_mc' | 'type_sc' | 'owner' | 'contract_label'; value: string; position: number };
 export type TeamStatus = { team: 'MC' | 'SC'; done_at: string; done_by: string | null };
 export type AppState = { deck: Deck; items: Item[]; bars: Bar[]; snapshots: SnapshotRow[]; lookups: Lookup[]; teamStatus: TeamStatus[]; uiColors: UiColors };
-export type Me = { username: string; role: Role; name: string };
+export type Me = { username: string; role: Role; name: string; iat?: number };
