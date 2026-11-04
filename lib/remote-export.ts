@@ -32,7 +32,11 @@ export async function exportDeckRemote(st: AppState): Promise<{ url: string | nu
     if (res.status === 202) throw new Error('il flusso risponde 202 senza attendere il salvataggio: aggiungi l\'azione "Risposta" dopo "Crea file"');
     if (!res.ok) throw new Error(`il flusso ha risposto ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
     const j: any = await res.json().catch(() => ({}));
-    return { url: typeof j?.webUrl === 'string' ? j.webUrl : null, fileName };
+    let link: string | null = typeof j?.webUrl === 'string' && j.webUrl ? j.webUrl : null;
+    // se il flusso non restituisce il link, lo costruisco da SAL_EXPORT_BASE_URL (URL della libreria, es. https://<tenant>.sharepoint.com/sites/<sito>/Shared Documents) + cartella + nome file
+    const base = process.env.SAL_EXPORT_BASE_URL;
+    if (!link && base) link = base.replace(/\/+$/, '').split('/').map((s, i) => (i < 3 ? s : encodeURIComponent(decodeURIComponent(s)))).join('/') + '/' + [...folderPath.split('/'), fileName].map(encodeURIComponent).join('/');
+    return { url: link, fileName };
   } catch (e: any) {
     throw new Error(e?.name === 'AbortError' ? 'timeout (45 s) nella chiamata al flusso' : String(e?.message ?? e));
   } finally { clearTimeout(timer); }

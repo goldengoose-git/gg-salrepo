@@ -17,5 +17,6 @@
 ## Variabili d'ambiente (Vercel, mai in chat/commit)
 - `SAL_EXPORT_URL`: URL del trigger (contiene la firma `sig=`)
 - `SAL_EXPORT_SECRET`: segreto condiviso (facoltativo, inviato come `x-sal-secret`)
+- `SAL_EXPORT_BASE_URL`: facoltativa, URL della libreria (es. `https://pwceur.sharepoint.com/sites/IT-ADV-Salesforce_ITA_Practice/Shared Documents`): serve a costruire il link al file se il flusso non lo restituisce
 - `SAL_EXPORT_FOLDER`: facoltativa, default `Golden Goose/1 - PM/SAL/SAL CRM-Marketing {year}`
 Senza `SAL_EXPORT_URL` l'export e disattivato e "Nuova settimana" non e vincolata (es. Preview).
